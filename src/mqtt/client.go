@@ -28,7 +28,6 @@ func NewMqttClient(hostname, username, password string, port int, tlsConfig *tls
 	} else {
 		broker = "tcp://" + hostname + ":" + fmt.Sprintf("%d", port)
 	}
-	fmt.Println("Adding broker: " + broker)
 	co.AddBroker(broker)
 	co.SetPassword(password)
 	co.SetUsername(username)

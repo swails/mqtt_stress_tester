@@ -2,6 +2,10 @@ package mqtt
 
 import (
 	"crypto/tls"
+	"crypto/x509"
+	"fmt"
+	"io/ioutil"
+	"os"
 	"testing"
 	"time"
 )
@@ -22,12 +26,59 @@ func TestMqttConnectionNoTLS(t *testing.T) {
 	var cfg *tls.Config
 	client := NewMqttClient(HOSTNAME, USERNAME, PASSWORD, TCP_PORT, cfg)
 
-	// Now try to connect with no TLS
 	if err := client.Connect(1 * time.Second); err != nil {
 		t.Error("unexpected error connecting without TLS to localhost: " + err.Error())
 	}
 
 	if !client.IsConnected() {
 		t.Error("expected connection to broker")
+	}
+
+	// Now try what should be illegal credentials
+	client = NewMqttClient(HOSTNAME, USERNAME, "badpassword", TCP_PORT, cfg)
+	if err := client.Connect(1 * time.Second); err == nil {
+		t.Error("expected error connecting with bad password")
+	}
+
+	client = NewMqttClient(HOSTNAME, "badusername", PASSWORD, TCP_PORT, cfg)
+	if err := client.Connect(1 * time.Second); err == nil {
+		t.Error("expected error connecting with bad username")
+	}
+
+	client = NewMqttClient(HOSTNAME, USERNAME, PASSWORD, TLS_PORT, cfg)
+	if err := client.Connect(1 * time.Second); err == nil {
+		t.Error("expected error connecting with TLS port over TCP")
+	}
+
+}
+
+// Tests MQTT connection with TLS encryption. Must have broker running with port
+// 8883 open for encrypted connections on localhost (e.g., w/ mosquitto)
+func TestMqttConnectionWithTLS(t *testing.T) {
+	workdir, err := os.Getwd()
+	if err != nil {
+		t.Error("Unexpected failure getting working directory")
+	}
+	fmt.Println("Working directory is " + workdir)
+
+	// Generate the certificate authority token
+	caCert, err := ioutil.ReadFile("files/ca.crt")
+	if err != nil {
+		t.Error("Unexpected failure reading CA cert")
+	}
+
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
+
+	cfg := &tls.Config{
+		MinVersion: tls.VersionTLS12,
+		ClientAuth: tls.NoClientCert,
+		RootCAs:    caCertPool,
+	}
+
+	client := NewMqttClient(HOSTNAME, USERNAME, PASSWORD, TLS_PORT, cfg)
+
+	if err := client.Connect(1 * time.Second); err != nil {
+		t.Error("Unexpected error connected without TLS to localhost: " + err.Error())
 	}
 }
