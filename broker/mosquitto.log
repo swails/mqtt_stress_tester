@@ -1,0 +1,57 @@
+1461603212: mosquitto version 1.4.4 (build date 2016-03-28 10:33:17+0000) starting
+1461603227: mosquitto version 1.4.4 (build date 2016-03-28 10:33:17+0000) starting
+1461603227: Config loaded from mosquitto.conf.
+1461603227: Opening ipv4 listen socket on port 1883.
+1461603227: Error: Address already in use
+1461603240: mosquitto version 1.4.4 (build date 2016-03-28 10:33:17+0000) starting
+1461603240: Config loaded from mosquitto.conf.
+1461603240: Opening ipv4 listen socket on port 1883.
+1461603240: Error: Address already in use
+1461603391: mosquitto version 1.4.4 (build date 2016-03-28 10:33:17+0000) starting
+1461603391: Config loaded from mosquitto.conf.
+1461603391: Opening ipv4 listen socket on port 1883.
+1461603391: Error: Address already in use
+1461603425: mosquitto version 1.4.4 (build date 2016-03-28 10:33:17+0000) starting
+1461603425: Config loaded from mosquitto.conf.
+1461603425: Opening ipv4 listen socket on port 1883.
+1461603425: Error: Address already in use
+1461603212: Config loaded from mosquitto.conf.
+1461603212: Opening ipv4 listen socket on port 1883.
+1461603212: Opening ipv6 listen socket on port 1883.
+1461603212: Opening ipv4 listen socket on port 8883.
+1461603212: Opening ipv6 listen socket on port 8883.
+1461603427: New connection from ::1 on port 1883.
+1461603427: New client connected from ::1 as e91ab6bd-6441-4332-bfcd-67feafffcc5f (c1, k30, u'stresstest').
+1461603427: Sending CONNACK to e91ab6bd-6441-4332-bfcd-67feafffcc5f (0, 0)
+1461603427: Socket error on client e91ab6bd-6441-4332-bfcd-67feafffcc5f, disconnecting.
+1461603457: mosquitto version 1.4.4 terminating
+1461603490: mosquitto version 1.4.4 (build date 2016-03-28 10:33:17+0000) starting
+1461603490: Config loaded from mosquitto.conf.
+1461603490: Opening ipv4 listen socket on port 1883.
+1461603490: Opening ipv6 listen socket on port 1883.
+1461603490: Opening ipv4 listen socket on port 8883.
+1461603490: Opening ipv6 listen socket on port 8883.
+1461603492: New connection from ::1 on port 1883.
+1461603492: New client connected from ::1 as fdf33657-08cd-48b9-9776-45927c1896e3 (c1, k30, u'stresstest').
+1461603492: Socket error on client fdf33657-08cd-48b9-9776-45927c1896e3, disconnecting.
+1461603492: mosquitto version 1.4.4 terminating
+1461603526: mosquitto version 1.4.4 (build date 2016-03-28 10:33:17+0000) starting
+1461603526: Config loaded from mosquitto.conf.
+1461603526: Opening ipv4 listen socket on port 1883.
+1461603526: Opening ipv6 listen socket on port 1883.
+1461603526: Opening ipv4 listen socket on port 8883.
+1461603526: Opening ipv6 listen socket on port 8883.
+1461603528: New connection from ::1 on port 1883.
+1461603528: New client connected from ::1 as 95a26e63-38f1-486e-b3a1-0af0445915d3 (c1, k30, u'stresstest').
+1461603528: Socket error on client 95a26e63-38f1-486e-b3a1-0af0445915d3, disconnecting.
+1461603528: mosquitto version 1.4.4 terminating
+1461603601: mosquitto version 1.4.4 (build date 2016-03-28 10:33:17+0000) starting
+1461603601: Config loaded from mosquitto.conf.
+1461603601: Opening ipv4 listen socket on port 1883.
+1461603601: Opening ipv6 listen socket on port 1883.
+1461603601: Opening ipv4 listen socket on port 8883.
+1461603601: Opening ipv6 listen socket on port 8883.
+1461603603: New connection from ::1 on port 1883.
+1461603603: New client connected from ::1 as 4e43c330-18fd-4bcb-8fbd-ea6f50c8c735 (c1, k30, u'stresstest').
+1461603603: Socket error on client 4e43c330-18fd-4bcb-8fbd-ea6f50c8c735, disconnecting.
+1461603603: mosquitto version 1.4.4 terminating
