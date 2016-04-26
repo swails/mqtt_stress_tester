@@ -2,8 +2,8 @@ package mqtt
 
 import (
 	"crypto/tls"
-	"crypto/x509"
-	"io/ioutil"
+	//	"crypto/x509"
+	//	"io/ioutil"
 	"testing"
 	"time"
 )
@@ -57,19 +57,9 @@ func TestMqttConnectionNoTLS(t *testing.T) {
 // Tests MQTT connection with TLS encryption. Must have broker running with port
 // 8883 open for encrypted connections on localhost (e.g., w/ mosquitto)
 func TestMqttConnectionWithTLS(t *testing.T) {
-	// Generate the certificate authority token
-	caCert, err := ioutil.ReadFile("files/ca.crt")
+	cfg, err := NewTLSAnonymousConfig("files/ca.crt")
 	if err != nil {
-		t.Error("Unexpected failure reading CA cert")
-	}
-
-	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(caCert)
-
-	cfg := &tls.Config{
-		MinVersion: tls.VersionTLS12,
-		ClientAuth: tls.NoClientCert,
-		RootCAs:    caCertPool,
+		t.Error("unexpected error in generating TLS config: %v", err)
 	}
 
 	client := NewMqttClient(HOSTNAME, USERNAME, PASSWORD, TLS_PORT, cfg)
@@ -98,4 +88,9 @@ func TestMqttConnectionWithTLS(t *testing.T) {
 	if client.IsConnected() {
 		t.Error("Expected client disconnect")
 	}
+}
+
+// Tests pub/sub over TCP connection. Must have broker running with port 1883
+// open for encrypted connections on localhost (e.g., w/ mosquitto)
+func TestMqttTCPPubSub(t *testing.T) {
 }
