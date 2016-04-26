@@ -26,6 +26,7 @@ func RandomTopic(prefix string) string {
 	return (prefix + generateRandomString(TOPIC_ALPHABET, 40-len(prefix)))
 }
 
+// Private helper function to build random strings
 func generateRandomString(chars string, size int) string {
 	msg := make([]byte, size)
 	for i := 0; i < size; i++ {
