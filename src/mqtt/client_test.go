@@ -123,10 +123,6 @@ func doPubSubTests(pubclient, subclient *MqttClient, t *testing.T) {
 		t.Errorf("unexpected error subscribing to test/topic: %v", err)
 	}
 
-	// Wait an infinitesimal amount of time to make sure the subscription
-	// is active before we publish.
-	<-time.After(1 * time.Microsecond)
-
 	err = pubclient.Publish("test/topic", 0, []byte("test message"))
 
 	if err != nil {
@@ -151,7 +147,6 @@ func doPubSubTests(pubclient, subclient *MqttClient, t *testing.T) {
 	if x != "test message 2" {
 		t.Errorf("Expected subscription to receive '%s'. Got '%s' instead.", "test message 2", x)
 	}
-
 	// Multi-publish
 
 	var num_messages int = 100
@@ -165,7 +160,8 @@ func doPubSubTests(pubclient, subclient *MqttClient, t *testing.T) {
 		// Now check that I got what I expected
 		for i := 0; i < num_messages; i++ {
 			if messages[i] != fmt.Sprintf("test message swarm %d", i) {
-				t.Errorf("Expected subscription to receive %s. Got '%s' instead.")
+				t.Errorf("Expected subscription to receive '%s'. Got '%s' instead.",
+					fmt.Sprintf("test message swarm %d", i), messages[i])
 			}
 		}
 	}()
