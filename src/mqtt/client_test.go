@@ -45,9 +45,13 @@ func TestMqttConnectionNoTLS(t *testing.T) {
 
 	client = NewMqttClient(HOSTNAME, USERNAME, PASSWORD, TLS_PORT, cfg)
 	if err := client.Connect(1 * time.Second); err == nil {
-		t.Error("expected error connecting with TLS port over TCP")
+		t.Error("expected error connecting to TLS port with TCP")
 	}
 
+	client.Disconnect()
+	if client.IsConnected() {
+		t.Error("Expected client disconnect")
+	}
 }
 
 // Tests MQTT connection with TLS encryption. Must have broker running with port
@@ -72,5 +76,26 @@ func TestMqttConnectionWithTLS(t *testing.T) {
 
 	if err := client.Connect(1 * time.Second); err != nil {
 		t.Error("Unexpected error connected without TLS to localhost: " + err.Error())
+	}
+
+	// Now try what should be illegal credentials
+	client = NewMqttClient(HOSTNAME, USERNAME, "badpassword", TLS_PORT, cfg)
+	if err := client.Connect(1 * time.Second); err == nil {
+		t.Error("expected error connecting with bad password")
+	}
+
+	client = NewMqttClient(HOSTNAME, "badusername", PASSWORD, TLS_PORT, cfg)
+	if err := client.Connect(1 * time.Second); err == nil {
+		t.Error("expected error connecting with bad username")
+	}
+
+	client = NewMqttClient(HOSTNAME, USERNAME, PASSWORD, TCP_PORT, cfg)
+	if err := client.Connect(1 * time.Second); err == nil {
+		t.Error("expected error connecting to TCP port with TLS")
+	}
+
+	client.Disconnect()
+	if client.IsConnected() {
+		t.Error("Expected client disconnect")
 	}
 }

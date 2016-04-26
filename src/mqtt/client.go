@@ -53,3 +53,10 @@ func (c *MqttClient) IsConnected() bool {
 	}
 	return c.client.IsConnected()
 }
+
+// Disconnects from the broker
+func (c *MqttClient) Disconnect() {
+	if c.client.IsConnected() {
+		c.client.Disconnect(250)
+	}
+}
