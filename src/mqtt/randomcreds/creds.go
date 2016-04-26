@@ -7,16 +7,23 @@ import (
 const ALPHABET = `ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@$%^&*()_=+,./#`
 const TOPIC_ALPHABET = `ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@$%^&*()_=+,./`
 
+// Generates a random user name with 20 characters
 func RandomUsername() string {
 	return generateRandomString(ALPHABET, 20)
 }
 
+// Generates a random password with 30 characters
 func RandomPassword() string {
 	return generateRandomString(ALPHABET, 30)
 }
 
-func RandomTopic() string {
-	return generateRandomString(TOPIC_ALPHABET, 40)
+// Generates a random topic starting with prefix with a total of 40 characters.
+// If prefix is more than 40 characters, it panics
+func RandomTopic(prefix string) string {
+	if len(prefix) > 40 {
+		panic("prefix must be <= 40 characters")
+	}
+	return (prefix + generateRandomString(TOPIC_ALPHABET, 40-len(prefix)))
 }
 
 func generateRandomString(chars string, size int) string {
