@@ -17,7 +17,7 @@ export GOPATH
 
 echo "Running Go tests"
 
-go test -v mqtt/...
+go test -v mqtt/... -timeout 5s
 
 rc=$?
 

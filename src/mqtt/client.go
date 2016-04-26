@@ -60,3 +60,32 @@ func (c *MqttClient) Disconnect() {
 		c.client.Disconnect(250)
 	}
 }
+
+// Subscribes to the broker and sends messages it receives back on a channel
+// with a buffer for 10 messages. You must make sure to pull messages off this
+// channel to avoid blocking the receiver and losing messages.
+func (c *MqttClient) Subscribe(topic string, qos int) (<-chan []byte, error) {
+	if !c.client.IsConnected() {
+		return nil, fmt.Errorf("not connected to subscribing broker")
+	}
+	subChan := make(chan []byte, 10)
+
+	// The callback puts the received message on the subChan
+	c.client.Subscribe(topic, byte(qos), func(c paho.Client, m paho.Message) {
+		payload := m.Payload()
+		subChan <- payload
+	})
+	return subChan, nil
+}
+
+// Publishes a message to a particular topic on a broker
+func (c *MqttClient) Publish(topic string, qos int, payload []byte) error {
+	if !c.client.IsConnected() {
+		return fmt.Errorf("not connected to publishing broker")
+	}
+	token := c.client.Publish(topic, byte(qos), true, payload)
+	if ret := token.Wait(); ret && token.Error() != nil {
+		return token.Error()
+	}
+	return nil
+}

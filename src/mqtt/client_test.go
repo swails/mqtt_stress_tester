@@ -2,8 +2,7 @@ package mqtt
 
 import (
 	"crypto/tls"
-	//	"crypto/x509"
-	//	"io/ioutil"
+	"fmt"
 	"testing"
 	"time"
 )
@@ -93,4 +92,73 @@ func TestMqttConnectionWithTLS(t *testing.T) {
 // Tests pub/sub over TCP connection. Must have broker running with port 1883
 // open for encrypted connections on localhost (e.g., w/ mosquitto)
 func TestMqttTCPPubSub(t *testing.T) {
+	pubclient := NewMqttClient(HOSTNAME, USERNAME, PASSWORD, TCP_PORT, nil)
+	subclient := NewMqttClient(HOSTNAME, USERNAME, PASSWORD, TCP_PORT, nil)
+
+	if err := pubclient.Connect(1 * time.Second); err != nil {
+		t.Error("unexpected problem connecting pubclient to broker")
+	}
+	if err := subclient.Connect(1 * time.Second); err != nil {
+		t.Error("unexpected problem connecting subclient to broker")
+	}
+
+	subChan, err := subclient.Subscribe("test/topic", 0)
+	if err != nil {
+		t.Errorf("unexpected error subscribing to test/topic: %v", err)
+	}
+
+	// Wait an infinitesimal amount of time to make sure the subscription
+	// is active before we publish.
+	<-time.After(1 * time.Microsecond)
+
+	err = pubclient.Publish("test/topic", 0, []byte("test message"))
+
+	if err != nil {
+		t.Errorf("unexpected error publishing to test/topic: %v", err)
+	}
+
+	x := string(<-subChan)
+
+	if x != "test message" {
+		t.Errorf("Expected subscription to receive '%s'. Got '%s' instead.", "test message", x)
+	}
+
+	// Publish again
+
+	err = pubclient.Publish("test/topic", 0, []byte("test message 2"))
+	if err != nil {
+		t.Errorf("unexpected error publishing second time: %v", err)
+	}
+
+	x = string(<-subChan)
+
+	if x != "test message 2" {
+		t.Errorf("Expected subscription to receive '%s'. Got '%s' instead.", "test message 2", x)
+	}
+
+	// Multi-publish
+
+	var num_messages int = 100
+
+	go func() {
+		messages := make([]string, num_messages)
+		for i := 0; i < num_messages; i++ {
+			messages = append(messages, string(<-subChan))
+		}
+
+		// Now check that I got what I expected
+		for i := 0; i < num_messages; i++ {
+			if messages[i] != fmt.Sprintf("test message swarm %d", i) {
+				t.Errorf("Expected subscription to receive %s. Got '%s' instead.")
+			}
+		}
+	}()
+
+	for i := 0; i < num_messages; i++ {
+		err = pubclient.Publish("test/topic", 0, []byte(fmt.Sprintf("test message swarm %d", i)))
+		if err != nil {
+			t.Errorf("Unexpected error publishing swarm number %d", i)
+		}
+	}
+
 }
