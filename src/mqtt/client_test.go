@@ -95,6 +95,22 @@ func TestMqttTCPPubSub(t *testing.T) {
 	pubclient := NewMqttClient(HOSTNAME, USERNAME, PASSWORD, TCP_PORT, nil)
 	subclient := NewMqttClient(HOSTNAME, USERNAME, PASSWORD, TCP_PORT, nil)
 
+	doPubSubTests(pubclient, subclient, t)
+}
+
+func TestMqttTLSPubSub(t *testing.T) {
+	cfg, err := NewTLSAnonymousConfig("files/ca.crt")
+	if err != nil {
+		t.Errorf("Unexpected error getting TLS configuration: %v", err)
+	}
+	pubclient := NewMqttClient(HOSTNAME, USERNAME, PASSWORD, TLS_PORT, cfg)
+	subclient := NewMqttClient(HOSTNAME, USERNAME, PASSWORD, TLS_PORT, cfg)
+
+	doPubSubTests(pubclient, subclient, t)
+}
+
+func doPubSubTests(pubclient, subclient *MqttClient, t *testing.T) {
+
 	if err := pubclient.Connect(1 * time.Second); err != nil {
 		t.Error("unexpected problem connecting pubclient to broker")
 	}
