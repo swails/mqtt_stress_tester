@@ -3,9 +3,7 @@ package mqtt
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"fmt"
 	"io/ioutil"
-	"os"
 	"testing"
 	"time"
 )
@@ -55,12 +53,6 @@ func TestMqttConnectionNoTLS(t *testing.T) {
 // Tests MQTT connection with TLS encryption. Must have broker running with port
 // 8883 open for encrypted connections on localhost (e.g., w/ mosquitto)
 func TestMqttConnectionWithTLS(t *testing.T) {
-	workdir, err := os.Getwd()
-	if err != nil {
-		t.Error("Unexpected failure getting working directory")
-	}
-	fmt.Println("Working directory is " + workdir)
-
 	// Generate the certificate authority token
 	caCert, err := ioutil.ReadFile("files/ca.crt")
 	if err != nil {

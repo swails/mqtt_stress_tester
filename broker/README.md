@@ -36,3 +36,9 @@ Starting the broker
 
 The configuration files here are designed to run ``mosquitto`` as an MQTT broker
 on ``localhost``.
+
+Special note
+------------
+
+Make sure you copy the root certificate (``ca.crt``) to the ``mqtt`` package so
+the tests can find it.

@@ -17,7 +17,7 @@ export GOPATH
 
 echo "Running Go tests"
 
-go test mqtt
+go test -v mqtt/...
 
 rc=$?
 
