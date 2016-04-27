@@ -2,7 +2,9 @@ package messages
 
 import (
 	"math"
+	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/montanaflynn/stats"
 )
@@ -28,6 +30,9 @@ func doCheckSize(size int, t *testing.T) {
 
 func TestRandomMessageDistribution(t *testing.T) {
 	doCheckSizeDistribution(1000, 20, 5.0, t)
+	doCheckSizeDistribution(1000, 40, 5.0, t)
+	doCheckSizeDistribution(1000, 50, 4.0, t)
+	doCheckSizeDistribution(1000, 60, 3.0, t)
 }
 
 func doCheckSizeDistribution(num, size int, variance float64, t *testing.T) {
@@ -61,5 +66,48 @@ func doCheckSizeDistribution(num, size int, variance float64, t *testing.T) {
 	if math.Abs(calcvar-variance) > math.Ceil(variance/math.Sqrt(float64(num))) {
 		t.Errorf("Variance (%f) deviates from expected (%f) by too much (allowed %f)",
 			calcvar, variance, variance/math.Sqrt(float64(num)))
+	}
+}
+
+// Checks that the message encodes the time so we can measure latency
+func TestMessageEncodesTime(t *testing.T) {
+	doCheckSizeTime(10, t)
+	doCheckSizeTime(15, t)
+	doCheckSizeTime(20, t)
+	doCheckSizeTime(25, t)
+	doCheckSizeTime(30, t)
+	doCheckSizeTime(100, t)
+	doCheckSizeTime(110, t)
+	doCheckSizeTime(120, t)
+	doCheckSizeTime(125, t)
+}
+
+func doCheckSizeTime(size int, t *testing.T) {
+	curTime := time.Duration(time.Now().UnixNano()) * time.Nanosecond
+	msg := GenerateRandomMessage(size)
+	msgTime := ExtractTimeFromMessage(msg)
+
+	if (msgTime-curTime > 1*time.Microsecond) || (curTime-msgTime > 1*time.Microsecond) {
+		t.Errorf("Could not extract encoded time in the message")
+	}
+}
+
+// Tests the encoding of the current nanosecond into bytearrays
+func TestByteEncoding(t *testing.T) {
+	// Check 1000 different random integers
+	for i := 0; i < 1000; i++ {
+		doCheckByteEncoding(rand.Int63(), t)
+	}
+}
+
+func doCheckByteEncoding(number int64, t *testing.T) {
+	bytes := make([]byte, 8)
+	err := int64ToBytes(number, bytes)
+	if err != nil {
+		t.Errorf("Unexpected error converting to bytes")
+	}
+	if bytesToInt64(bytes) != number {
+		t.Errorf("Unexpected error converting integer to bytes. Got %d, expected %d.",
+			int(bytesToInt64(bytes)), int(number))
 	}
 }

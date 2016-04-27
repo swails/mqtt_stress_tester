@@ -2,7 +2,6 @@ package mqtt
 
 import (
 	"crypto/tls"
-	"fmt"
 	"testing"
 	"time"
 )
@@ -137,15 +136,15 @@ func doPubSubTests(pubclient, subclient *MqttClient, t *testing.T) {
 
 	// Publish again
 
-	err = pubclient.Publish("test/topic", 0, []byte("test message 2"))
+	err = pubclient.Publish("test/topic", 0, []byte("test message"))
 	if err != nil {
 		t.Errorf("unexpected error publishing second time: %v", err)
 	}
 
 	x = string(<-subChan)
 
-	if x != "test message 2" {
-		t.Errorf("Expected subscription to receive '%s'. Got '%s' instead.", "test message 2", x)
+	if x != "test message" {
+		t.Errorf("Expected subscription to receive '%s'. Got '%s' instead.", "test message", x)
 	}
 	// Multi-publish
 
@@ -159,15 +158,15 @@ func doPubSubTests(pubclient, subclient *MqttClient, t *testing.T) {
 
 		// Now check that I got what I expected
 		for i := 0; i < num_messages; i++ {
-			if messages[i] != fmt.Sprintf("test message swarm %d", i) {
+			if messages[i] != "test message" {
 				t.Errorf("Expected subscription to receive '%s'. Got '%s' instead.",
-					fmt.Sprintf("test message swarm %d", i), messages[i])
+					"test message", messages[i])
 			}
 		}
 	}()
 
 	for i := 0; i < num_messages; i++ {
-		err = pubclient.Publish("test/topic", 0, []byte(fmt.Sprintf("test message swarm %d", i)))
+		err = pubclient.Publish("test/topic", 0, []byte("test message"))
 		if err != nil {
 			t.Errorf("Unexpected error publishing swarm number %d", i)
 		}
