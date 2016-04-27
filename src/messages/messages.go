@@ -32,16 +32,21 @@ func GenerateRandomMessage(size int) []byte {
 
 // Generate a list of "num" random messages, with an average length of "size"
 // and a variance in the sizes of "variance"
-func GenerateRandomMessages(num, size int, variance float64) [][]byte {
-	msgs := make([][]byte, num)
+func GenerateRandomMessages(num, size int, variance float64) <-chan []byte {
+	msgs := make(chan []byte)
 	fac := math.Sqrt(variance * float64(num) / (float64(num) - 1))
-	for i := 0; i < num; i++ {
-		msg_size := int(math.Floor(rand.NormFloat64()*fac)) + size
-		if size >= 8 {
-			msg_size = int(math.Max(float64(msg_size), 8))
+	// Fire off a goroutine to populate the messages channel. Make it blocking so
+	// that the time is always up-to-date.
+	go func() {
+		for i := 0; i < num; i++ {
+			msg_size := int(math.Floor(rand.NormFloat64()*fac)) + size
+			if size >= 8 {
+				msg_size = int(math.Max(float64(msg_size), 8))
+			}
+			msgs <- GenerateRandomMessage(msg_size)
 		}
-		msgs[i] = GenerateRandomMessage(msg_size)
-	}
+		close(msgs)
+	}()
 	return msgs
 }
 

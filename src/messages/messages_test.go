@@ -38,8 +38,8 @@ func TestRandomMessageDistribution(t *testing.T) {
 func doCheckSizeDistribution(num, size int, variance float64, t *testing.T) {
 	messages := GenerateRandomMessages(num, size, variance)
 	var lengths stats.Float64Data
-	for _, msg := range messages {
-		lengths = append(lengths, float64(len(msg)))
+	for i := 0; i < num; i++ {
+		lengths = append(lengths, float64(len(<-messages)))
 	}
 	if len(lengths) != num {
 		t.Errorf("number of lengths (%d) not equal to number of messages (%d)", len(lengths), num)
@@ -87,9 +87,9 @@ func doCheckSizeTime(size int, t *testing.T) {
 	msg := GenerateRandomMessage(size)
 	msgTime := ExtractTimeFromMessage(msg)
 
-	if (msgTime-curTime > 1*time.Microsecond) || (curTime-msgTime > 1*time.Microsecond) {
+	if (msgTime-curTime > 5*time.Microsecond) || (curTime-msgTime > 5*time.Microsecond) {
 		t.Errorf("The message time (%d) and current time (%d) differ too much (%d)",
-		  int64(msgTime), int64(curTime), int64(msgTime-curTime))
+			int64(msgTime), int64(curTime), int64(msgTime-curTime))
 	}
 }
 

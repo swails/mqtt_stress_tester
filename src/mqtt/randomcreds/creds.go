@@ -4,8 +4,7 @@ import (
 	"math/rand"
 )
 
-const ALPHABET = `ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@$%^&*()_=+,./#`
-const TOPIC_ALPHABET = `ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@$%^&*()_=+,./`
+const ALPHABET = `ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_`
 
 // Generates a random user name with 20 characters
 func RandomUsername() string {
@@ -23,7 +22,7 @@ func RandomTopic(prefix string) string {
 	if len(prefix) > 40 {
 		panic("prefix must be <= 40 characters")
 	}
-	return (prefix + generateRandomString(TOPIC_ALPHABET, 40-len(prefix)))
+	return (prefix + generateRandomString(ALPHABET, 40-len(prefix)))
 }
 
 // Private helper function to build random strings
