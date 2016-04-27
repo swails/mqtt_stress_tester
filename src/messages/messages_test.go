@@ -88,7 +88,8 @@ func doCheckSizeTime(size int, t *testing.T) {
 	msgTime := ExtractTimeFromMessage(msg)
 
 	if (msgTime-curTime > 1*time.Microsecond) || (curTime-msgTime > 1*time.Microsecond) {
-		t.Errorf("Could not extract encoded time in the message")
+		t.Errorf("The message time (%d) and current time (%d) differ too much (%d)",
+		  int64(msgTime), int64(curTime), int64(msgTime-curTime))
 	}
 }
 
