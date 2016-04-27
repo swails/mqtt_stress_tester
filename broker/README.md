@@ -42,3 +42,22 @@ Special note
 
 Make sure you copy the root certificate (``ca.crt``) to the ``mqtt`` package so
 the tests can find it.
+
+Users and Passwords
+-------------------
+
+To emulate real-world scenarios with large-scale brokers, a ``mosquitto.passwd``
+file has been generated with one pre-defined username/password combination
+(``stresstest`` user and ``stressmeout`` password). Another 1000 random
+usernames and passwords have been generated as well by ``random_userpass.py``.
+The raw text users and passwords are stored in ``rawtext.passwd``, and the
+command
+
+```
+mosquitto_passwd -U mosquitto.passwd
+```
+
+was run on a copy of this raw text password file to generate a file with user
+names and hashed passwords. This allows the stress tester to read a raw text
+file with passwords and user accounts to make multiple authenticated connections
+with different accounts.
