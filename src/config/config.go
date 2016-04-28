@@ -145,4 +145,5 @@ func Echo(w io.Writer) {
 	fmt.Fprintf(w, "Message Size:    %d bytes\n", pubsub.MsgSize)
 	fmt.Fprintf(w, "Variance (size): %f\n", pubsub.MsgSizeVar)
 	fmt.Fprintf(w, "Topic prefix:    %s\n", pubsub.TopicPfx)
+	fmt.Fprintf(w, "Publishing for:  %d second(s)\n", pubsub.Duration)
 }

@@ -10,6 +10,7 @@ import (
 	"mqtt"
 	"mqtt/randomcreds"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -72,11 +73,14 @@ func main() {
 	// To check that the publish and subscribe count match, and/or report differences
 	msgCntPub := make([]int, config.NumPublishers())
 
+	// To make sure we let the pub/sub go until it's done
+	var wg sync.WaitGroup
+
 	// Spin up goroutines for each subcription channel to process all of the messages as they come in
 	for i, sub := range subscribers {
-		ch := sub.SubChan
-		// TODO: add synchronization
-		go func(i int) {
+		wg.Add(1)
+		go func(i int, ch <-chan []byte) {
+			defer wg.Done()
 			for msg := range ch {
 				elapsed, size := processMessage(msg)
 				tm := float64(elapsed.Nanoseconds()) * 1e-9
@@ -86,13 +90,18 @@ func main() {
 				msgSizesSquared[i] += size * size
 				msgCnt[i]++
 			}
-		}(i)
+		}(i, sub.SubChan)
 	}
 
 	// Now spin up goroutines to have each publish flooder start flooding messages
 	for i, pub := range publishers {
+		wg.Add(1)
 		go func(i int, pub *flooding.PublishFlooder) {
-			msgCntPub[i] = pub.PublishFor(time.Duration(int64(config.MessagesPerSecond())) * time.Second)
+			defer wg.Done()
+			msgCntPub[i] = pub.PublishFor(time.Duration(int64(config.PublishDuration()))*time.Second, subscribers[i].Complete)
 		}(i, pub)
 	}
+
+	// Sync point. We can't do anything with the stats we collected until all the flooders are done
+	wg.Wait()
 }
