@@ -51,7 +51,7 @@ func main() {
 		if len(config.CertificateAuthority()) > 0 {
 			cfg, err = mqtt.NewTLSAnonymousConfig(config.CertificateAuthority())
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %v", err)
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 				os.Exit(1)
 			}
 		}
@@ -59,7 +59,7 @@ func main() {
 		pf, sf, err := flooding.NewPubSubFlooder(c, config.MessagesPerSecond(), config.MessageRateVariance(),
 			config.MessageSize(), config.MessageSizeVariance(), 0, topic)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v", err)
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}
 		publishers[i] = pf
