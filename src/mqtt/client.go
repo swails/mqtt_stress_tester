@@ -16,6 +16,7 @@ type MqttClient struct {
 	port     int
 	co       *paho.ClientOptions
 	client   paho.Client
+	subchan  chan []byte // a holder so we can close it when necessary
 }
 
 // Create a new pointer to a MqttClient instance. Setting tlsConfig to nil disables TLS encryption
@@ -38,7 +39,7 @@ func NewMqttClient(hostname, username, password string, port int, tlsConfig *tls
 		co.SetTLSConfig(tlsConfig)
 	}
 	client := paho.NewClient(co)
-	return &MqttClient{hostname, username, password, port, co, client}
+	return &MqttClient{hostname, username, password, port, co, client, nil}
 }
 
 // Connect to the broker, waiting a specified timeout (seconds)
@@ -60,6 +61,7 @@ func (c *MqttClient) IsConnected() bool {
 // Disconnects from the broker
 func (c *MqttClient) Disconnect() {
 	if c.client.IsConnected() {
+		c.CloseSubchannel()
 		c.client.Disconnect(250)
 	}
 }
@@ -71,6 +73,7 @@ func (c *MqttClient) Subscribe(topic string, qos int) (<-chan []byte, error) {
 	if !c.client.IsConnected() {
 		return nil, fmt.Errorf("not connected to subscribing broker")
 	}
+	c.CloseSubchannel()
 	subChan := make(chan []byte, 10)
 
 	// The callback puts the received message on the subChan
@@ -78,6 +81,7 @@ func (c *MqttClient) Subscribe(topic string, qos int) (<-chan []byte, error) {
 		payload := m.Payload()
 		subChan <- payload
 	})
+	c.subchan = subChan
 	return subChan, nil
 }
 
@@ -91,4 +95,11 @@ func (c *MqttClient) Publish(topic string, qos int, payload []byte) error {
 		return token.Error()
 	}
 	return nil
+}
+
+// Closes the subscription channel. If it is not open, this is a no-op
+func (c *MqttClient) CloseSubchannel() {
+	if c.subchan != nil {
+		close(c.subchan)
+	}
 }

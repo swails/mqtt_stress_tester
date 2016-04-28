@@ -1,6 +1,7 @@
 package flooding
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -71,7 +72,7 @@ func TestPubFlood(t *testing.T) {
 	for _, fld := range flooders {
 		tmp := fld
 		go func() {
-			n_messages <- tmp.PublishFor(3 * time.Second)
+			n_messages <- tmp.PublishFor(3*time.Second, nil)
 		}()
 	}
 
@@ -122,11 +123,10 @@ func TestPubSubFlood(t *testing.T) {
 	}
 	// Launch all of the publishers in separate goroutines
 	n_messages := make(chan int, 10)
-	for _, fld := range pubflooders {
-		tmp := fld
-		go func() {
-			n_messages <- tmp.PublishFor(3 * time.Second)
-		}()
+	for i, fld := range pubflooders {
+		go func(i int, fld *PublishFlooder) {
+			n_messages <- fld.PublishFor(3*time.Second, subflooders[i].Complete)
+		}(i, fld)
 	}
 
 	// Now collect the number of messages printed
@@ -134,6 +134,70 @@ func TestPubSubFlood(t *testing.T) {
 	var total_sub int = 0
 	for i := 0; i < 10; i++ {
 		nmsg := <-n_messages
+		if nmsg < 20 || nmsg > 40 {
+			t.Errorf("Published %d messages. Expected to publish between 20 and 40", nmsg)
+		}
+		total_pub += nmsg
+		total_sub += len(rcvd_msgs[i])
+	}
+	if total_pub != total_sub {
+		t.Errorf("Published %d total messages. Only received %d", total_pub, total_sub)
+	}
+}
+
+// Tests the closing of the subscription flood channel appropriately
+func TestSubFloodClose(t *testing.T) {
+	cfg, err := mqtt.NewTLSAnonymousConfig("../mqtt/files/ca.crt")
+	if err != nil {
+		t.Errorf("Unexpected failure creating TLS configuration")
+	}
+
+	// First create a set of 10 flooders
+	pubflooders := make([]*PublishFlooder, 10)
+	subflooders := make([]*SubscribeFlooder, 10)
+	for i := 0; i < 10; i++ {
+		topic := randomcreds.RandomTopic("test/")
+		client := mqtt.NewMqttClient(HOSTNAME, USERNAME, PASSWORD, TLS_PORT, cfg)
+		pf, sf := NewPubSubFlooder(client, 10, 0.005, 50, 5, 0, topic)
+		pubflooders[i] = pf
+		subflooders[i] = sf
+	}
+
+	// A sync point
+	var wg sync.WaitGroup
+
+	// Now go through and set up listeners for each of the subscription channels
+	// so we process the messages we're receiving.
+	rcvd_msgs := make([][][]byte, 10)
+	for i := 0; i < 10; i++ {
+		rcvd_msgs[i] = make([][]byte, 0)
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			for msg := range subflooders[i].SubChan {
+				rcvd_msgs[i] = append(rcvd_msgs[i], msg)
+			}
+		}(i)
+	}
+	// Launch all of the publishers in separate goroutines
+	var n_messages []int = make([]int, 10)
+	for i, fld := range pubflooders {
+		wg.Add(1)
+		go func(i int, fld *PublishFlooder) {
+			defer wg.Done()
+			n_messages[i] = fld.PublishFor(3*time.Second, subflooders[i].Complete)
+		}(i, fld)
+	}
+
+	// Make sure all subscription channels were closed and the publishers
+	// properly ended
+	wg.Wait()
+
+	// Now collect the number of messages printed
+	var total_pub int = 0
+	var total_sub int = 0
+	for i := 0; i < 10; i++ {
+		nmsg := n_messages[i]
 		if nmsg < 20 || nmsg > 40 {
 			t.Errorf("Published %d messages. Expected to publish between 20 and 40", nmsg)
 		}

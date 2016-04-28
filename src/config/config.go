@@ -55,7 +55,7 @@ func init() {
 }
 
 // Returns the hostname of the broker
-func Host() string {
+func Hostname() string {
 	return conn.Host
 }
 
@@ -65,12 +65,12 @@ func Passwd() string {
 }
 
 // Name of a single user (superceded by Passwd() file)
-func User() string {
+func Username() string {
 	return conn.User
 }
 
 // The password for the single user (superceded by Passwd() file)
-func Pass() string {
+func Password() string {
 	return conn.Pass
 }
 

@@ -70,7 +70,7 @@ func NewPubSubFlooder(c *mqtt.MqttClient, mps int, mrv float64, ms int, msv floa
 
 // Publishes on the MQTT channel continuously for the given duration with the
 // average rate and variance
-func (p *PublishFlooder) PublishFor(dur time.Duration) int {
+func (p *PublishFlooder) PublishFor(dur time.Duration, callback func()) int {
 	waitTime := 0 * time.Microsecond
 	var numMessages int = 0
 	nmsg := int(float64(int(dur.Seconds())*p.MessagesPerSecond) * 1.5)
@@ -90,10 +90,19 @@ func (p *PublishFlooder) PublishFor(dur time.Duration) int {
 				numMessages += 1
 			}
 		case <-doneChan:
+			if callback != nil {
+				callback()
+			}
 			return numMessages
 		}
 		// Figure out how much time to wait until the next message in ns
 		n_ns = math.Floor(rand.NormFloat64()*fac) + avgWait
 		waitTime = time.Duration(int64(math.Max(n_ns, 100))) // always wait at least 100 ns
 	}
+	return -1
+}
+
+// Closes the subscription channel for a subscription flooder
+func (s *SubscribeFlooder) Complete() {
+	s.client.CloseSubchannel()
 }
