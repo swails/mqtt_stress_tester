@@ -1,11 +1,10 @@
 all: build
 
 deps:
-	go get github.com/eclipse/paho.mqtt.golang
-	go get github.com/montanaflynn/stats
+	./build.sh --deps
 
-build:
-	go build stresstester
+build: deps
+	./build.sh
 
 test:
 	/bin/rm -f broker/mosquitto.log
