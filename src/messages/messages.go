@@ -19,13 +19,13 @@ const MESSAGE_CHARACTERS = `ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
 func GenerateRandomMessage(size int) []byte {
 	msg := make([]byte, size)
 	var start int = 0
-	if size >= 8 {
-		start = 8
-		int64ToBytes(time.Now().UnixNano(), msg)
-	}
 	for i := start; i < size; i++ {
 		idx := rand.Intn(len(MESSAGE_CHARACTERS))
 		msg[i] = byte(MESSAGE_CHARACTERS[idx])
+	}
+	if size >= 8 {
+		start = 8
+		int64ToBytes(time.Now().UnixNano(), msg)
 	}
 	return msg
 }

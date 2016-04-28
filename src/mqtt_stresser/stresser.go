@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"flooding"
 	"fmt"
+	"math"
 	"messages"
 	"mqtt"
 	"mqtt/randomcreds"
@@ -40,7 +41,7 @@ func main() {
 			os.Exit(1)
 		}
 	}
-	config.Echo(output)
+	config.Echo(os.Stdout)
 
 	// Set up the publish/subscribe pool with an MqttConnection
 	publishers := make([]*flooding.PublishFlooder, config.NumPublishers())
@@ -98,10 +99,25 @@ func main() {
 		wg.Add(1)
 		go func(i int, pub *flooding.PublishFlooder) {
 			defer wg.Done()
-			msgCntPub[i] = pub.PublishFor(time.Duration(int64(config.PublishDuration()))*time.Second, subscribers[i].Complete)
+			msgCntPub[i] = pub.PublishFor(time.Duration(int64(config.PublishDuration()))*time.Second, func() {
+				subscribers[i].Complete(1 * time.Second)
+			})
 		}(i, pub)
 	}
 
 	// Sync point. We can't do anything with the stats we collected until all the flooders are done
 	wg.Wait()
+
+	// We have all of our stats. Go ahead and compute averages and stuff now
+	fmt.Fprintf(output, "Success rate,Transit Time (s),,Message size,\n")
+	for i := 0; i < config.NumPublishers(); i++ {
+		subcnt := float64(msgCnt[i])
+		fmt.Printf("Messages (Sub, Pub): %d, %d\n", msgCnt[i], msgCntPub[i])
+		suc := subcnt / float64(msgCntPub[i]) * 100
+		avgTime := msgTimes[i] / subcnt
+		stdTime := math.Sqrt(math.Abs(msgTimesSquared[i]/subcnt - avgTime*avgTime))
+		avgSize := float64(msgSizes[i]) / subcnt
+		stdSize := math.Sqrt(math.Abs(float64(msgSizesSquared[i])/subcnt - avgSize*avgSize))
+		fmt.Fprintf(output, "%.2f%%,%g,%g,%g,%g\n", suc, avgTime, stdTime, avgSize, stdSize)
+	}
 }

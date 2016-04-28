@@ -125,7 +125,7 @@ func TestPubSubFlood(t *testing.T) {
 	n_messages := make(chan int, 10)
 	for i, fld := range pubflooders {
 		go func(i int, fld *PublishFlooder) {
-			n_messages <- fld.PublishFor(3*time.Second, subflooders[i].Complete)
+			n_messages <- fld.PublishFor(3*time.Second, func() { subflooders[i].Complete(1 * time.Microsecond) })
 		}(i, fld)
 	}
 
@@ -185,7 +185,7 @@ func TestSubFloodClose(t *testing.T) {
 		wg.Add(1)
 		go func(i int, fld *PublishFlooder) {
 			defer wg.Done()
-			n_messages[i] = fld.PublishFor(3*time.Second, subflooders[i].Complete)
+			n_messages[i] = fld.PublishFor(3*time.Second, func() { subflooders[i].Complete(1 * time.Microsecond) })
 		}(i, fld)
 	}
 

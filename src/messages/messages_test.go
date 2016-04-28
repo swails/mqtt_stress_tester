@@ -83,8 +83,8 @@ func TestMessageEncodesTime(t *testing.T) {
 }
 
 func doCheckSizeTime(size int, t *testing.T) {
-	curTime := time.Duration(time.Now().UnixNano()) * time.Nanosecond
 	msg := GenerateRandomMessage(size)
+	curTime := time.Duration(time.Now().UnixNano()) * time.Nanosecond
 	msgTime := ExtractTimeFromMessage(msg)
 
 	if (msgTime-curTime > 5*time.Microsecond) || (curTime-msgTime > 5*time.Microsecond) {
