@@ -118,7 +118,6 @@ func main() {
 	fmt.Fprintf(output, "Success rate,Transit Time (s),,Message size,\n")
 	for i := 0; i < config.NumPublishers(); i++ {
 		subcnt := float64(msgCnt[i])
-		fmt.Printf("Messages (Sub, Pub): %d, %d\n", msgCnt[i], msgCntPub[i])
 		suc := subcnt / float64(msgCntPub[i]) * 100
 		avgTime := msgTimes[i] / subcnt
 		stdTime := math.Sqrt(math.Abs(msgTimesSquared[i]/subcnt - avgTime*avgTime))
