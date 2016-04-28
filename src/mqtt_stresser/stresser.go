@@ -41,7 +41,6 @@ func main() {
 			os.Exit(1)
 		}
 	}
-	config.Echo(os.Stdout)
 
 	// Set up the publish/subscribe pool with an MqttConnection
 	publishers := make([]*flooding.PublishFlooder, config.NumPublishers())
@@ -57,11 +56,18 @@ func main() {
 			}
 		}
 		c := mqtt.NewMqttClient(config.Hostname(), config.Username(), config.Password(), config.Port(), cfg)
-		pf, sf := flooding.NewPubSubFlooder(c, config.MessagesPerSecond(), config.MessageRateVariance(),
+		pf, sf, err := flooding.NewPubSubFlooder(c, config.MessagesPerSecond(), config.MessageRateVariance(),
 			config.MessageSize(), config.MessageSizeVariance(), 0, topic)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v", err)
+			os.Exit(1)
+		}
 		publishers[i] = pf
 		subscribers[i] = sf
 	}
+
+	// We are connected to the broker, go ahead and echo our parameters
+	config.Echo(os.Stdout)
 
 	// To keep track of statistics for each publish flooder. But only keep running stats to avoid running out of memory
 	// if we do *lots* of pubs and subs. Do both measurements and squares of measurements so we can get variances

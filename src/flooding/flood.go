@@ -43,29 +43,43 @@ type PublishFlooder struct {
 
 // Creates a new PublishFlooder and returns a pointer. If the MQTT client is not
 // connected, this creates that connection
-func NewPublishFlooder(c *mqtt.MqttClient, mps int, mrv float64, ms int, msv float64, qos int, topic string) *PublishFlooder {
+func NewPublishFlooder(c *mqtt.MqttClient, mps int, mrv float64, ms int, msv float64, qos int, topic string) (*PublishFlooder, error) {
 	if !c.IsConnected() {
-		c.Connect(10 * time.Second) // Allow 10 seconds to connect
+		err := c.Connect(10 * time.Second) // Allow 10 seconds to connect
+		if err != nil {
+			return nil, fmt.Errorf("creating pub flooder: %v", err)
+		}
 	}
-	return &PublishFlooder{mps, mrv, ms, msv, Flooder{topic, qos, c}}
+	return &PublishFlooder{mps, mrv, ms, msv, Flooder{topic, qos, c}}, nil
 }
 
 // Creates a new SubscribeFlooder and returns a pointer. if the MQTT client is
 // not connected, this creates that connection and starts the listening
-func NewSubscribeFlooder(c *mqtt.MqttClient, qos int, topic string) *SubscribeFlooder {
+func NewSubscribeFlooder(c *mqtt.MqttClient, qos int, topic string) (*SubscribeFlooder, error) {
 	if !c.IsConnected() {
-		c.Connect(10 * time.Second) // Allow 10 seconds to connect
+		err := c.Connect(10 * time.Second) // Allow 10 seconds to connect
+		if err != nil {
+			return nil, fmt.Errorf("creating sub flooder: %v", err)
+		}
 	}
 	ch, err := c.Subscribe(topic, qos)
 	if err != nil {
-		panic(fmt.Sprintf("error subscribing to topic %s with QoS %d: %v", topic, qos, err))
+		return nil, fmt.Errorf("subscribing in sub flooder: %v", err)
 	}
-	return &SubscribeFlooder{ch, Flooder{topic, qos, c}}
+	return &SubscribeFlooder{ch, Flooder{topic, qos, c}}, nil
 }
 
 // Creates a new SubscribeFlooder and PublishFlooder from the same MQTT client
-func NewPubSubFlooder(c *mqtt.MqttClient, mps int, mrv float64, ms int, msv float64, qos int, topic string) (*PublishFlooder, *SubscribeFlooder) {
-	return NewPublishFlooder(c, mps, mrv, ms, msv, qos, topic), NewSubscribeFlooder(c, qos, topic)
+func NewPubSubFlooder(c *mqtt.MqttClient, mps int, mrv float64, ms int, msv float64, qos int, topic string) (*PublishFlooder, *SubscribeFlooder, error) {
+	p, err := NewPublishFlooder(c, mps, mrv, ms, msv, qos, topic)
+	if err != nil {
+		return nil, nil, err
+	}
+	s, err := NewSubscribeFlooder(c, qos, topic)
+	if err != nil {
+		return nil, nil, err
+	}
+	return p, s, nil
 }
 
 // Publishes on the MQTT channel continuously for the given duration with the

@@ -7,7 +7,8 @@ fi
 GOPATH="$PWD"/"`dirname $0`"
 
 echo "Starting broker"
-cd broker && mosquitto -c mosquitto.conf &
+cd broker
+mosquitto -c mosquitto.conf &
 sleep 1 # Let the broker start up
 
 cd ../
