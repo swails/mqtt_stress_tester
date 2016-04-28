@@ -3,16 +3,14 @@ package main
 
 import (
 	"config"
-	"fmt"
+	// "fmt"
 	"os"
 )
 
 func main() {
-	stuff, err := config.Parser.Parse()
+	_, err := config.Parser.Parse()
 	if err != nil {
 		os.Exit(1)
 	}
-	fmt.Println("Hostname is " + config.Host())
-	fmt.Printf("And stuff is %s\n", stuff)
-	os.Exit(0)
+	config.Echo(os.Stdout)
 }

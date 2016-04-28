@@ -31,7 +31,7 @@ var pubsub struct {
 var files struct {
 	CA     string       `short:"c" long:"ca-file" description:"Certificate authority to enable anonymous TLS connection"`
 	Output string       `short:"o" long:"output" default:"stdout" description:"Output file to write detailed pub/sub statistics to"`
-	Yaml   func(string) `short:"y" long:"yaml" description:"Input file with command-line parameters in YAML format. Items in YAML override command-line options"`
+	Yaml   func(string) `short:"y" long:"yaml" description:"Input file with command-line parameters in YAML format. CL options appearing before are overridden. Those appearing after override."`
 }
 
 func init() {
@@ -139,7 +139,8 @@ func Echo(w io.Writer) {
 		fmt.Fprintf(w, "TLS Certificate: %s\n", files.CA)
 	}
 	fmt.Fprintf(w, "Port:            %d\n", conn.Port)
-	fmt.Fprintf(w, "Message Rate:    %d per second\n", pubsub.Num)
+	fmt.Fprintf(w, "# of publishers: %d\n", pubsub.Num)
+	fmt.Fprintf(w, "Message Rate:    %d per second\n", pubsub.MsgPerSec)
 	fmt.Fprintf(w, "Variance (MpS):  %f\n", pubsub.MsgRateVar)
 	fmt.Fprintf(w, "Message Size:    %d bytes\n", pubsub.MsgSize)
 	fmt.Fprintf(w, "Variance (size): %f\n", pubsub.MsgSizeVar)
