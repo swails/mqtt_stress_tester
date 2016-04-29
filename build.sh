@@ -16,6 +16,7 @@ if [ "$1" = "--deps" ]; then
 	go get github.com/eclipse/paho.mqtt.golang || exit 1
 	go get github.com/montanaflynn/stats || exit 1
   go get github.com/jessevdk/go-flags || exit 1
+  go get github.com/go-yaml/yaml || exit 1
   exit 0
 fi
 
