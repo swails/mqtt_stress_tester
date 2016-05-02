@@ -75,3 +75,35 @@ Help Options:
 
 The command-line options afford you the flexibility to publish more or fewer
 messages, at whatever rate you choose.
+
+Alternative Input: YAML
+~~~~~~~~~~~~~~~~~~~~~~~
+
+If you do not want to specify all input options on the command-line, you can
+write a YAML-formatted input file whose keys are the same as the long
+command-line options shown above. An example file is shown below:
+
+```yaml
+# Sample YAML file for input to mqtt_stresser. The YAML names are the same as
+# the command-line flags (without the leading -- or short options)
+hostname: somehost
+passwd-file: passwd
+username: username
+password: password
+port: 1985
+num-publishers: 100
+messages-per-second: 100
+msg-rate-variance: 1.0
+message-size: 100
+msg-size-variance: 10
+duration: 120
+topic-prefix: sometopic/
+ca-file: some.crt
+output: some.csv
+```
+
+The way input is processed is that YAML files are dispatched for processing as
+soon as they are found on the command-line. Because of this order of operations,
+any command-line argument appearing *before* the YAML file will be overwritten,
+while any argument appearing *after* the YAML file will override the contents of
+the YAML file.

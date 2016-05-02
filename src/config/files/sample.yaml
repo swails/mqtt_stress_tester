@@ -1,0 +1,16 @@
+# Sample YAML file for input to mqtt_stresser. The YAML names are the same as
+# the command-line flags (without the leading -- or short options)
+hostname: somehost
+passwd-file: passwd
+username: username
+password: password
+port: 1985
+num-publishers: 100
+messages-per-second: 100
+msg-rate-variance: 1.0
+message-size: 100
+msg-size-variance: 10
+duration: 120
+topic-prefix: sometopic/
+ca-file: some.crt
+output: some.csv

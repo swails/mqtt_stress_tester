@@ -1,9 +1,7 @@
 // +build test
 package config
 
-import (
-	"testing"
-)
+import "testing"
 
 // Test the command-line parser
 func TestCommandLineParser(t *testing.T) {
@@ -89,7 +87,7 @@ func doCheck(t *testing.T) {
 	if pubsub.MsgSizeVar != 10 {
 		t.Errorf("Expected message size variance to be 10, not %g", pubsub.MsgSizeVar)
 	}
-	if pubsub.MsgSizeVar != 10 {
+	if pubsub.TopicPfx != "sometopic/" {
 		t.Errorf("Expected topic prefix to be sometopic/, not %s", pubsub.TopicPfx)
 	}
 	if files.CA != "some.crt" {
@@ -98,7 +96,30 @@ func doCheck(t *testing.T) {
 	if files.Output != "some.csv" {
 		t.Errorf("Expected output file to be some.csv, not %s", files.Output)
 	}
+	// Reset the variables for the next test
+	conn.Host = ""
+	conn.Passwd = ""
+	conn.User = ""
+	conn.Pass = ""
+	conn.Port = 0
+	pubsub.Num = 0
+	pubsub.MsgPerSec = 0
+	pubsub.Duration = 0
+	pubsub.MsgSize = 0
+	pubsub.MsgRateVar = 0
+	pubsub.MsgSizeVar = 0
+	pubsub.TopicPfx = ""
+	files.CA = ""
+	files.Output = ""
 }
 
 func TestYaml(t *testing.T) {
+	args := []string{
+		"--yaml", "files/sample.yaml",
+	}
+	_, err := Parser.ParseArgs(args)
+	if err != nil {
+		t.Errorf("Unexpected error parsing arguments: %v", err)
+	}
+	doCheck(t)
 }

@@ -29,9 +29,9 @@ var pubsub struct {
 }
 
 var files struct {
-	CA     string       `short:"c" long:"ca-file" description:"Certificate authority to enable anonymous TLS connection"`
-	Output string       `short:"o" long:"output" default:"stdout" description:"Output file to write detailed pub/sub statistics to"`
-	Yaml   func(string) `short:"y" long:"yaml" description:"Input file with command-line parameters in YAML format. CL options appearing before are overridden. Those appearing after override."`
+	CA     string             `short:"c" long:"ca-file" description:"Certificate authority to enable anonymous TLS connection"`
+	Output string             `short:"o" long:"output" default:"stdout" description:"Output file to write detailed pub/sub statistics to"`
+	Yaml   func(string) error `short:"y" long:"yaml" description:"Input file with command-line parameters in YAML format. CL options appearing before are overridden. Those appearing after override."`
 }
 
 func init() {
