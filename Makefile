@@ -1,3 +1,5 @@
+PREFIX=/usr/local
+
 all: build
 
 deps:
@@ -5,6 +7,9 @@ deps:
 
 build: deps
 	./build.sh
+
+install: build
+	/bin/mv mqtt_stresser $(PREFIX)/bin
 
 test: deps
 	/bin/rm -f broker/mosquitto.log
