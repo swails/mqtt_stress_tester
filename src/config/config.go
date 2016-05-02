@@ -132,7 +132,7 @@ func Echo(w io.Writer) {
 	} else if len(conn.User) > 0 {
 		fmt.Fprintf(w, "Username:        %s\n", conn.User)
 		if len(conn.Pass) > 0 {
-			fmt.Fprintf(w, "Password:        %s\n", conn.User)
+			fmt.Fprintf(w, "Password:        %s\n", conn.Pass)
 		}
 	}
 	if len(files.CA) > 0 {

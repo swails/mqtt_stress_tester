@@ -42,6 +42,9 @@ func main() {
 		}
 	}
 
+	// Echo our parameters before we connect so we can see what the settings were in case we have a problem
+	config.Echo(os.Stdout)
+
 	// Set up the publish/subscribe pool with an MqttConnection
 	publishers := make([]*flooding.PublishFlooder, config.NumPublishers())
 	subscribers := make([]*flooding.SubscribeFlooder, config.NumPublishers())
@@ -65,9 +68,6 @@ func main() {
 		publishers[i] = pf
 		subscribers[i] = sf
 	}
-
-	// We are connected to the broker, go ahead and echo our parameters
-	config.Echo(os.Stdout)
 
 	// To keep track of statistics for each publish flooder. But only keep running stats to avoid running out of memory
 	// if we do *lots* of pubs and subs. Do both measurements and squares of measurements so we can get variances

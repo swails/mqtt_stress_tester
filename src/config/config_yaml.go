@@ -1,7 +1,9 @@
 package config
 
 import (
+	"fmt"
 	"io/ioutil"
+	"os"
 
 	"github.com/go-yaml/yaml"
 )
@@ -28,6 +30,7 @@ func processYaml(fname string) error {
 	if err != nil {
 		panic("Error reading YAML file: " + err.Error())
 	}
+	fmt.Fprintf(os.Stderr, "Processing YAML input file %s\n", fname)
 	// Load the contents of the YAML file into the struct
 	err = yaml.Unmarshal(contents, &yamlOptions)
 	// Transfer YAML input to the structs
