@@ -118,6 +118,6 @@ func (p *PublishFlooder) PublishFor(dur time.Duration, callback func()) int {
 
 // Closes the subscription channel for a subscription flooder
 func (s *SubscribeFlooder) Complete(delay time.Duration) {
-	<-time.After(delay) // Wait for a certain amount of time
+	time.Sleep(delay) // wait for a certain amount of time
 	s.client.CloseSubchannel()
 }
