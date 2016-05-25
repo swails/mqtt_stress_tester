@@ -2,12 +2,12 @@ package flooding
 
 import (
 	"fmt"
+	"killswitch"
 	"math"
 	"math/rand"
-	"time"
-
 	"messages"
 	"mqtt"
+	"time"
 )
 
 // Generic flooder type common to both subscription and publishing
@@ -82,15 +82,12 @@ func NewPubSubFlooder(c *mqtt.MqttClient, mps int, mrv float64, ms int, msv floa
 	return p, s, nil
 }
 
-// Publishes on the MQTT channel continuously for the given duration with the
-// average rate and variance
-func (p *PublishFlooder) PublishFor(dur time.Duration, callback func()) int {
+// Publishes on the MQTT channel continuously until the killswitch is triggered with the
+// average rate and variance set when initializing the publish flooder
+func (p *PublishFlooder) Publish(ks *killswitch.Killswitch, callback func()) int {
 	waitTime := 0 * time.Microsecond
 	var numMessages int = 0
-	nmsg := int(float64(int(dur.Seconds())*p.MessagesPerSecond) * 1.5)
-	msgChan := messages.GenerateRandomMessages(nmsg, p.MessageSize, p.MessageSizeVariance)
-	// Make the done channel here as close as possible to where it will be used
-	doneChan := time.After(dur)
+	msgChan := messages.GenerateRandomMessages(ks, p.MessageSize, p.MessageSizeVariance)
 	// Store some variables for later to determine how many ns to wait between pubs
 	fac := math.Sqrt(p.MessageRateVariance) * 1e9
 	avgWait := float64(1.0e9 / float64(p.MessagesPerSecond))
@@ -103,7 +100,7 @@ func (p *PublishFlooder) PublishFor(dur time.Duration, callback func()) int {
 			if err == nil {
 				numMessages += 1
 			}
-		case <-doneChan:
+		case <-ks.Done():
 			if callback != nil {
 				callback()
 			}

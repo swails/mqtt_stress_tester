@@ -1,6 +1,7 @@
 package messages
 
 import (
+	"killswitch"
 	"math"
 	"math/rand"
 	"testing"
@@ -36,11 +37,13 @@ func TestRandomMessageDistribution(t *testing.T) {
 }
 
 func doCheckSizeDistribution(num, size int, variance float64, t *testing.T) {
-	messages := GenerateRandomMessages(num, size, variance)
+	ks := killswitch.NewKillswitch()
+	messages := GenerateRandomMessages(ks, size, variance)
 	var lengths stats.Float64Data
 	for i := 0; i < num; i++ {
 		lengths = append(lengths, float64(len(<-messages)))
 	}
+	ks.Trigger() // Trigger the end of our quest for messages
 	if len(lengths) != num {
 		t.Errorf("number of lengths (%d) not equal to number of messages (%d)", len(lengths), num)
 	}

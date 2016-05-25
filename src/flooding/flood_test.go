@@ -1,12 +1,12 @@
 package flooding
 
 import (
+	"killswitch"
+	"mqtt"
+	"mqtt/randomcreds"
 	"sync"
 	"testing"
 	"time"
-
-	"mqtt"
-	"mqtt/randomcreds"
 )
 
 const (
@@ -72,11 +72,16 @@ func TestPubFlood(t *testing.T) {
 		}(i)
 	}
 	// Launch all of the publishers in separate goroutines
+	ks := killswitch.NewKillswitch()
+	go func() {
+		time.Sleep(3 * time.Second)
+		ks.Trigger()
+	}()
 	n_messages := make(chan int, 10)
 	for _, fld := range flooders {
 		tmp := fld
 		go func() {
-			n_messages <- tmp.PublishFor(3*time.Second, nil)
+			n_messages <- tmp.Publish(ks, nil)
 		}()
 	}
 
@@ -129,10 +134,15 @@ func TestPubSubFlood(t *testing.T) {
 		}(i)
 	}
 	// Launch all of the publishers in separate goroutines
+	ks := killswitch.NewKillswitch()
+	go func() {
+		time.Sleep(3 * time.Second)
+		ks.Trigger()
+	}()
 	n_messages := make(chan int, 10)
 	for i, fld := range pubflooders {
 		go func(i int, fld *PublishFlooder) {
-			n_messages <- fld.PublishFor(3*time.Second, func() { subflooders[i].Complete(1 * time.Microsecond) })
+			n_messages <- fld.Publish(ks, func() { subflooders[i].Complete(1 * time.Microsecond) })
 		}(i, fld)
 	}
 
@@ -190,12 +200,17 @@ func TestSubFloodClose(t *testing.T) {
 		}(i)
 	}
 	// Launch all of the publishers in separate goroutines
+	ks := killswitch.NewKillswitch()
+	go func() {
+		time.Sleep(3 * time.Second)
+		ks.Trigger()
+	}()
 	var n_messages []int = make([]int, 10)
 	for i, fld := range pubflooders {
 		wg.Add(1)
 		go func(i int, fld *PublishFlooder) {
 			defer wg.Done()
-			n_messages[i] = fld.PublishFor(3*time.Second, func() { subflooders[i].Complete(1 * time.Microsecond) })
+			n_messages[i] = fld.Publish(ks, func() { subflooders[i].Complete(1 * time.Microsecond) })
 		}(i, fld)
 	}
 
