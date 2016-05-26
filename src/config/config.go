@@ -26,6 +26,7 @@ var pubsub struct {
 	MsgRateVar float64 `short:"v" long:"msg-rate-variance" default:"0.005" description:"Variance (seconds squared) of the sample of message rates"`
 	MsgSizeVar float64 `short:"V" long:"msg-size-variance" default:"5" description:"Variance (messages squared) of the sample of message sizes"`
 	TopicPfx   string  `short:"t" long:"topic-prefix" default:"test/" description:"Prefix to add to all random topic names for each publisher"`
+	CnctIntvl  float64 `short:"i" long:"interval" default:"1" description:"Interval (in seconds) between successive broker connection attempts"`
 }
 
 var files struct {

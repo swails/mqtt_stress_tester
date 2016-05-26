@@ -14,3 +14,4 @@ duration: 120
 topic-prefix: sometopic/
 ca-file: some.crt
 output: some.csv
+interval: 5.0

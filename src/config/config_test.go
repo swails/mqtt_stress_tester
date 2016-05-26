@@ -20,6 +20,7 @@ func TestCommandLineParser(t *testing.T) {
 		"--topic-prefix", "sometopic/",
 		"--ca-file", "some.crt",
 		"--output", "some.csv",
+		"--interval", "5.0",
 	}
 	_, err := Parser.ParseArgs(args)
 	if err != nil {
@@ -45,6 +46,7 @@ func TestCommandLineParserShortArgs(t *testing.T) {
 		"-t", "sometopic/",
 		"-c", "some.crt",
 		"-o", "some.csv",
+		"-i", "5.0",
 	}
 	_, err := Parser.ParseArgs(args)
 	if err != nil {
@@ -90,6 +92,9 @@ func doCheck(t *testing.T) {
 	if pubsub.TopicPfx != "sometopic/" {
 		t.Errorf("Expected topic prefix to be sometopic/, not %s", pubsub.TopicPfx)
 	}
+	if pubsub.CnctIntvl != 5.0 {
+		t.Errorf("Expected connect interval to be 5 seconds, not %f", pubsub.CnctIntvl)
+	}
 	if files.CA != "some.crt" {
 		t.Errorf("Expected CA file to be some.crt, not %s", files.CA)
 	}
@@ -108,6 +113,7 @@ func doCheck(t *testing.T) {
 	pubsub.MsgSize = 0
 	pubsub.MsgRateVar = 0
 	pubsub.MsgSizeVar = 0
+	pubsub.CnctIntvl = 0
 	pubsub.TopicPfx = ""
 	files.CA = ""
 	files.Output = ""

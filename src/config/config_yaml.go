@@ -20,6 +20,7 @@ var yamlOptions struct {
 	MsgSize    int     `yaml:"message-size"`
 	MsgRateVar float64 `yaml:"msg-rate-variance"`
 	MsgSizeVar float64 `yaml:"msg-size-variance"`
+	CnctIntvl  float64 `yaml:"interval"`
 	TopicPfx   string  `yaml:"topic-prefix"`
 	CA         string  `yaml:"ca-file"`
 	Output     string
@@ -75,6 +76,9 @@ func processYaml(fname string) error {
 	}
 	if yamlOptions.Duration > 0 {
 		pubsub.Duration = yamlOptions.Duration
+	}
+	if yamlOptions.CnctIntvl > 0 {
+		pubsub.CnctIntvl = yamlOptions.CnctIntvl
 	}
 	return nil
 }
