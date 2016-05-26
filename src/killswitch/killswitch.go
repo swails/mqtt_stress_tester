@@ -10,11 +10,12 @@ type Killswitch struct {
 	mux       *sync.Mutex
 	triggered bool
 	done      chan struct{}
+	waiter    *sync.WaitGroup
 }
 
 // Creates a pointer to a new Killswitch
 func NewKillswitch() *Killswitch {
-	return &Killswitch{&sync.Mutex{}, false, make(chan struct{})}
+	return &Killswitch{&sync.Mutex{}, false, make(chan struct{}), &sync.WaitGroup{}}
 }
 
 // Returns a read-only channel that is closed when the killswitch is triggered
@@ -30,4 +31,16 @@ func (k *Killswitch) Trigger() {
 		close(k.done)
 		k.triggered = true
 	}
+}
+
+func (k *Killswitch) Add() {
+	k.waiter.Add(1)
+}
+
+func (k *Killswitch) Subtract() {
+	k.waiter.Done()
+}
+
+func (k *Killswitch) Wait() {
+	k.waiter.Wait()
 }

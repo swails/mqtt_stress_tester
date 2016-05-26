@@ -101,5 +101,6 @@ func (c *MqttClient) Publish(topic string, qos int, payload []byte) error {
 func (c *MqttClient) CloseSubchannel() {
 	if c.subchan != nil {
 		close(c.subchan)
+		c.subchan = nil
 	}
 }

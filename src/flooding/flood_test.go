@@ -1,6 +1,7 @@
 package flooding
 
 import (
+	"fmt"
 	"killswitch"
 	"mqtt"
 	"mqtt/randomcreds"
@@ -60,19 +61,26 @@ func TestPubFlood(t *testing.T) {
 		subChans[i] = ch
 	}
 
+	// Launch all of the publishers in separate goroutines
+	ks := killswitch.NewKillswitch()
+
 	// Now go through and set up listeners for each of the subscription channels
 	// so we process the messages we're receiving.
 	rcvd_msgs := make([][][]byte, 10)
 	for i := 0; i < 10; i++ {
 		rcvd_msgs[i] = make([][]byte, 0)
 		go func(i int) {
-			for msg := range subChans[i] {
-				rcvd_msgs[i] = append(rcvd_msgs[i], msg)
+		mainLoop:
+			for {
+				select {
+				case msg := <-subChans[i]:
+					rcvd_msgs[i] = append(rcvd_msgs[i], msg)
+				case <-ks.Done():
+					break mainLoop
+				}
 			}
 		}(i)
 	}
-	// Launch all of the publishers in separate goroutines
-	ks := killswitch.NewKillswitch()
 	go func() {
 		time.Sleep(3 * time.Second)
 		ks.Trigger()
@@ -122,19 +130,26 @@ func TestPubSubFlood(t *testing.T) {
 		subflooders[i] = sf
 	}
 
+	ks := killswitch.NewKillswitch()
+
 	// Now go through and set up listeners for each of the subscription channels
 	// so we process the messages we're receiving.
 	rcvd_msgs := make([][][]byte, 10)
 	for i := 0; i < 10; i++ {
 		rcvd_msgs[i] = make([][]byte, 0)
 		go func(i int) {
-			for msg := range subflooders[i].SubChan {
-				rcvd_msgs[i] = append(rcvd_msgs[i], msg)
+		mainLoop:
+			for {
+				select {
+				case msg := <-subflooders[i].SubChan:
+					rcvd_msgs[i] = append(rcvd_msgs[i], msg)
+				case <-ks.Done():
+					break mainLoop
+				}
 			}
 		}(i)
 	}
 	// Launch all of the publishers in separate goroutines
-	ks := killswitch.NewKillswitch()
 	go func() {
 		time.Sleep(3 * time.Second)
 		ks.Trigger()
@@ -142,7 +157,7 @@ func TestPubSubFlood(t *testing.T) {
 	n_messages := make(chan int, 10)
 	for i, fld := range pubflooders {
 		go func(i int, fld *PublishFlooder) {
-			n_messages <- fld.Publish(ks, func() { subflooders[i].Complete(1 * time.Microsecond) })
+			n_messages <- fld.Publish(ks, nil)
 		}(i, fld)
 	}
 
@@ -185,6 +200,8 @@ func TestSubFloodClose(t *testing.T) {
 
 	// A sync point
 	var wg sync.WaitGroup
+	// Launch all of the publishers in separate goroutines
+	ks := killswitch.NewKillswitch()
 
 	// Now go through and set up listeners for each of the subscription channels
 	// so we process the messages we're receiving.
@@ -194,13 +211,17 @@ func TestSubFloodClose(t *testing.T) {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			for msg := range subflooders[i].SubChan {
-				rcvd_msgs[i] = append(rcvd_msgs[i], msg)
+		mainLoop:
+			for {
+				select {
+				case msg := <-subflooders[i].SubChan:
+					rcvd_msgs[i] = append(rcvd_msgs[i], msg)
+				case <-ks.Done():
+					break mainLoop
+				}
 			}
 		}(i)
 	}
-	// Launch all of the publishers in separate goroutines
-	ks := killswitch.NewKillswitch()
 	go func() {
 		time.Sleep(3 * time.Second)
 		ks.Trigger()
@@ -210,7 +231,7 @@ func TestSubFloodClose(t *testing.T) {
 		wg.Add(1)
 		go func(i int, fld *PublishFlooder) {
 			defer wg.Done()
-			n_messages[i] = fld.Publish(ks, func() { subflooders[i].Complete(1 * time.Microsecond) })
+			n_messages[i] = fld.Publish(ks, nil)
 		}(i, fld)
 	}
 
@@ -232,4 +253,28 @@ func TestSubFloodClose(t *testing.T) {
 	if total_pub != total_sub {
 		t.Errorf("Published %d total messages. Only received %d", total_pub, total_sub)
 	}
+}
+
+func TestFloodCollection(t *testing.T) {
+	ks := killswitch.NewKillswitch()
+	coll := NewFlooderCollection(HOSTNAME, USERNAME, PASSWORD, TCP_PORT, nil, 100,
+		1*time.Millisecond, 10*time.Millisecond, ks, 1000000, 0.001, 100, 20, 0)
+	// After 10 ms, we should have ~10 attempted connections
+	time.Sleep(10 * time.Millisecond)
+	nAttempted := coll.NumAttempted()
+	if nAttempted < 8 || nAttempted > 12 {
+		t.Errorf("Expected between 8 and 12 attempted connections. Got %d", nAttempted)
+	}
+	time.Sleep(5 * time.Second)
+	ks.Trigger()
+	if coll.NumAttempted() != 100 {
+		t.Errorf("Should have attempted 100 connections by now. Got %d", coll.NumAttempted())
+	}
+	if coll.NumFailed() > 0 {
+		// Make sure none failed
+		t.Errorf("Should not have failed any connections (had %d)", coll.NumFailed())
+	}
+	ks.Wait()
+	// Look at the message stats
+	fmt.Printf("nMsgSent = %d\n", coll.NumSentMessages())
 }
