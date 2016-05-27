@@ -14,6 +14,11 @@ import (
 
 const MESSAGE_CHARACTERS = `ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_!@#$%^&*(),./;'"`
 
+func init() {
+	// Set a random seed to avoid duplicating messages
+	rand.Seed(time.Now().UnixNano())
+}
+
 // Generates a random message that is a particular size with the time at which
 // the message was generated encoded into the first 8 bytes (as long as
 // size > 8, otherwise no time is encoded)

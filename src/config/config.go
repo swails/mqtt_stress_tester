@@ -4,6 +4,7 @@ package config
 import (
 	"fmt"
 	"io"
+	"time"
 
 	flags "github.com/jessevdk/go-flags"
 )
@@ -32,7 +33,7 @@ var pubsub struct {
 var files struct {
 	CA     string             `short:"c" long:"ca-file" description:"Certificate authority to enable anonymous TLS connection"`
 	Output string             `short:"o" long:"output" default:"stdout" description:"Output file to write detailed pub/sub statistics to"`
-	Yaml   func(string) error `short:"y" long:"yaml" description:"Input file with command-line parameters in YAML format. CL options appearing before are overridden. Those appearing after override."`
+	Yaml   func(string) error `short:"y" long:"yaml" description:"Input file with command-line parameters in YAML format. CL options override YAML input"`
 }
 
 func init() {
@@ -53,6 +54,67 @@ func init() {
 	if err != nil {
 		panic("Error adding group to parser: " + err.Error())
 	}
+}
+
+func ParseCommandLine(args []string) error {
+	_, err := Parser.ParseArgs(args)
+	if err != nil {
+		return err
+	}
+	// Transfer YAML input to the structs
+	if len(yamlOptions.Hostname) > 0 {
+		conn.Host = yamlOptions.Hostname
+	}
+	if len(yamlOptions.Passwd) > 0 {
+		conn.Passwd = yamlOptions.Passwd
+	}
+	if len(yamlOptions.Username) > 0 {
+		conn.User = yamlOptions.Username
+	}
+	if len(yamlOptions.Password) > 0 {
+		conn.Pass = yamlOptions.Password
+	}
+	if yamlOptions.Port > 0 {
+		conn.Port = yamlOptions.Port
+	}
+	if yamlOptions.Num > 0 {
+		pubsub.Num = yamlOptions.Num
+	}
+	if yamlOptions.MsgPerSec > 0 {
+		pubsub.MsgPerSec = yamlOptions.MsgPerSec
+	}
+	if yamlOptions.MsgSize > 0 {
+		pubsub.MsgSize = yamlOptions.MsgSize
+	}
+	if yamlOptions.MsgRateVar > 0 {
+		pubsub.MsgRateVar = yamlOptions.MsgRateVar
+	}
+	if yamlOptions.MsgSizeVar > 0 {
+		pubsub.MsgSizeVar = yamlOptions.MsgSizeVar
+	}
+	if len(yamlOptions.TopicPfx) > 0 {
+		pubsub.TopicPfx = yamlOptions.TopicPfx
+	}
+	if len(yamlOptions.CA) > 0 {
+		files.CA = yamlOptions.CA
+	}
+	if len(yamlOptions.Output) > 0 {
+		files.Output = yamlOptions.Output
+	}
+	if yamlOptions.Duration > 0 {
+		pubsub.Duration = yamlOptions.Duration
+	}
+	if yamlOptions.CnctIntvl > 0 {
+		pubsub.CnctIntvl = yamlOptions.CnctIntvl
+	}
+	// If we parsed our YAML file, we should re-parse our command-line to override our YAML input with any command-line
+	// arguments
+	files.Yaml = func(_ string) error { return nil } // no-op now
+	_, err = Parser.ParseArgs(args)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // Returns the hostname of the broker
@@ -113,6 +175,11 @@ func MessageSizeVariance() float64 {
 // The prefix for all randomly generated topic names
 func TopicPrefix() string {
 	return pubsub.TopicPfx
+}
+
+// The time between successive MQTT client connection attempts
+func ConnectInterval() time.Duration {
+	return time.Duration(int64(pubsub.CnctIntvl*1e6)) * time.Microsecond
 }
 
 // The output file where the statistics are written

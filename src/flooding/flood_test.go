@@ -1,7 +1,7 @@
+//+build !test
 package flooding
 
 import (
-	"fmt"
 	"killswitch"
 	"mqtt"
 	"mqtt/randomcreds"
@@ -258,7 +258,7 @@ func TestSubFloodClose(t *testing.T) {
 func TestFloodCollection(t *testing.T) {
 	ks := killswitch.NewKillswitch()
 	coll := NewFlooderCollection(HOSTNAME, USERNAME, PASSWORD, TCP_PORT, nil, 100,
-		1*time.Millisecond, 10*time.Millisecond, ks, 1000000, 0.001, 100, 20, 0)
+		1*time.Millisecond, 10*time.Millisecond, ks, 10, 0.001, 100, 20, 0)
 	// After 10 ms, we should have ~10 attempted connections
 	time.Sleep(10 * time.Millisecond)
 	nAttempted := coll.NumAttempted()
@@ -276,5 +276,15 @@ func TestFloodCollection(t *testing.T) {
 	}
 	ks.Wait()
 	// Look at the message stats
-	fmt.Printf("nMsgSent = %d\n", coll.NumSentMessages())
+	if coll.NumSentMessages() < 3000 {
+		t.Errorf("Expected at least 3K messages. Got %d", coll.NumSentMessages())
+	}
+	rm := len(coll.MessageTimings())
+	sm := coll.NumSentMessages()
+	if rm > sm {
+		t.Errorf("Received more messages than sent (%d vs %d)", rm, sm)
+	}
+	if sm-rm > 5 {
+		t.Errorf("Received messages (%d) not close enough to # of sent messages (%d)", rm, sm)
+	}
 }

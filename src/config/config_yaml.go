@@ -33,52 +33,5 @@ func processYaml(fname string) error {
 	}
 	fmt.Fprintf(os.Stderr, "Processing YAML input file %s\n", fname)
 	// Load the contents of the YAML file into the struct
-	err = yaml.Unmarshal(contents, &yamlOptions)
-	// Transfer YAML input to the structs
-	if len(yamlOptions.Hostname) > 0 {
-		conn.Host = yamlOptions.Hostname
-	}
-	if len(yamlOptions.Passwd) > 0 {
-		conn.Passwd = yamlOptions.Passwd
-	}
-	if len(yamlOptions.Username) > 0 {
-		conn.User = yamlOptions.Username
-	}
-	if len(yamlOptions.Password) > 0 {
-		conn.Pass = yamlOptions.Password
-	}
-	if yamlOptions.Port > 0 {
-		conn.Port = yamlOptions.Port
-	}
-	if yamlOptions.Num > 0 {
-		pubsub.Num = yamlOptions.Num
-	}
-	if yamlOptions.MsgPerSec > 0 {
-		pubsub.MsgPerSec = yamlOptions.MsgPerSec
-	}
-	if yamlOptions.MsgSize > 0 {
-		pubsub.MsgSize = yamlOptions.MsgSize
-	}
-	if yamlOptions.MsgRateVar > 0 {
-		pubsub.MsgRateVar = yamlOptions.MsgRateVar
-	}
-	if yamlOptions.MsgSizeVar > 0 {
-		pubsub.MsgSizeVar = yamlOptions.MsgSizeVar
-	}
-	if len(yamlOptions.TopicPfx) > 0 {
-		pubsub.TopicPfx = yamlOptions.TopicPfx
-	}
-	if len(yamlOptions.CA) > 0 {
-		files.CA = yamlOptions.CA
-	}
-	if len(yamlOptions.Output) > 0 {
-		files.Output = yamlOptions.Output
-	}
-	if yamlOptions.Duration > 0 {
-		pubsub.Duration = yamlOptions.Duration
-	}
-	if yamlOptions.CnctIntvl > 0 {
-		pubsub.CnctIntvl = yamlOptions.CnctIntvl
-	}
-	return nil
+	return yaml.Unmarshal(contents, &yamlOptions)
 }

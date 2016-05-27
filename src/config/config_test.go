@@ -22,7 +22,7 @@ func TestCommandLineParser(t *testing.T) {
 		"--output", "some.csv",
 		"--interval", "5.0",
 	}
-	_, err := Parser.ParseArgs(args)
+	err := ParseCommandLine(args)
 	if err != nil {
 		t.Errorf("Unexpected error parsing arguments: %v", err)
 	}
@@ -48,7 +48,7 @@ func TestCommandLineParserShortArgs(t *testing.T) {
 		"-o", "some.csv",
 		"-i", "5.0",
 	}
-	_, err := Parser.ParseArgs(args)
+	err := ParseCommandLine(args)
 	if err != nil {
 		t.Errorf("Unexpected error parsing arguments: %v", err)
 	}
@@ -123,7 +123,7 @@ func TestYaml(t *testing.T) {
 	args := []string{
 		"--yaml", "files/sample.yaml",
 	}
-	_, err := Parser.ParseArgs(args)
+	err := ParseCommandLine(args)
 	if err != nil {
 		t.Errorf("Unexpected error parsing arguments: %v", err)
 	}

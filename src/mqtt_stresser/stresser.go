@@ -6,13 +6,13 @@ import (
 	"crypto/tls"
 	"flooding"
 	"fmt"
-	"math"
+	"killswitch"
 	"messages"
 	"mqtt"
-	"mqtt/randomcreds"
 	"os"
-	"sync"
 	"time"
+
+	"github.com/montanaflynn/stats"
 )
 
 // Processes a message, returning how long between publish and reception and the
@@ -25,7 +25,7 @@ func processMessage(msg []byte) (time.Duration, int) {
 }
 
 func main() {
-	_, err := config.Parser.Parse()
+	err := config.ParseCommandLine(os.Args)
 	if err != nil {
 		os.Exit(1)
 	}
@@ -45,84 +45,62 @@ func main() {
 	// Echo our parameters before we connect so we can see what the settings were in case we have a problem
 	config.Echo(os.Stdout)
 
-	// Set up the publish/subscribe pool with an MqttConnection
-	publishers := make([]*flooding.PublishFlooder, config.NumPublishers())
-	subscribers := make([]*flooding.SubscribeFlooder, config.NumPublishers())
-	for i := 0; i < config.NumPublishers(); i++ {
-		topic := randomcreds.RandomTopic(config.TopicPrefix())
-		var cfg *tls.Config
-		if len(config.CertificateAuthority()) > 0 {
-			cfg, err = mqtt.NewTLSAnonymousConfig(config.CertificateAuthority())
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-				os.Exit(1)
-			}
-		}
-		c := mqtt.NewMqttClient(config.Hostname(), config.Username(), config.Password(), config.Port(), cfg)
-		pf, sf, err := flooding.NewPubSubFlooder(c, config.MessagesPerSecond(), config.MessageRateVariance(),
-			config.MessageSize(), config.MessageSizeVariance(), 0, topic)
+	// Set up TLS configuration if we have it
+	var cfg *tls.Config
+	if len(config.CertificateAuthority()) > 0 {
+		cfg, err = mqtt.NewTLSAnonymousConfig(config.CertificateAuthority())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}
-		publishers[i] = pf
-		subscribers[i] = sf
 	}
 
-	// To keep track of statistics for each publish flooder. But only keep running stats to avoid running out of memory
-	// if we do *lots* of pubs and subs. Do both measurements and squares of measurements so we can get variances
-	msgTimes := make([]float64, config.NumPublishers())
-	msgTimesSquared := make([]float64, config.NumPublishers())
-	msgSizes := make([]int, config.NumPublishers())
-	msgSizesSquared := make([]int, config.NumPublishers())
-	msgCnt := make([]int, config.NumPublishers())
+	// Killswitch to bring down the flooders smoothly
+	ks := killswitch.NewKillswitch()
 
-	// To check that the publish and subscribe count match, and/or report differences
-	msgCntPub := make([]int, config.NumPublishers())
+	// Set up the publish/subscribe pool with an MqttConnection
+	fc := flooding.NewFlooderCollection(config.Hostname(), config.Username(), config.Password(), config.Port(), cfg,
+		config.NumPublishers(), config.ConnectInterval(), 10*time.Second, ks, config.MessagesPerSecond(), config.MessageRateVariance(),
+		config.MessageSize(), config.MessageSizeVariance(), 0)
 
-	// To make sure we let the pub/sub go until it's done
-	var wg sync.WaitGroup
+	// Run the connections as long as we asked for
+	go func() {
+		time.Sleep(time.Duration(config.PublishDuration()) * time.Second)
+		ks.Trigger()
+	}()
 
-	// Spin up goroutines for each subcription channel to process all of the messages as they come in
-	for i, sub := range subscribers {
-		wg.Add(1)
-		go func(i int, ch <-chan []byte) {
-			defer wg.Done()
-			for msg := range ch {
-				elapsed, size := processMessage(msg)
-				tm := float64(elapsed.Nanoseconds()) * 1e-9
-				msgTimes[i] += tm
-				msgSizes[i] += size
-				msgTimesSquared[i] += tm * tm
-				msgSizesSquared[i] += size * size
-				msgCnt[i]++
-			}
-		}(i, sub.SubChan)
+	// block until the trigger is done
+	<-ks.Done()
+	ks.Wait()
+
+	// We've finished flooding our broker with connections and messages. Collect the stats and check it out
+	nAttempted := fc.NumAttempted()
+	nFailed := fc.NumFailed()
+	nMsg := fc.NumSentMessages()
+	msgTimings := fc.MessageTimings()
+	// Figure out how many messages we've received based on how many records of messages we have
+	nRcv := len(msgTimings)
+
+	fmt.Fprintf(output, "Created a total of %d (out of %d attempted) connections to the MQTT broker\n", nAttempted-nFailed, nAttempted)
+	fmt.Fprintf(output, "Sent a total of %d messages.\n", nMsg)
+	fmt.Fprintf(output, "Received a total of %d messages.\n", nRcv)
+	timings := stats.Float64Data(msgTimings)
+	mean, err := timings.Mean()
+	if err != nil {
+		fmt.Fprintf(output, "ERROR computing average message latency!\n")
+	} else {
+		fmt.Fprintf(output, "Average latency   = %10.6f ms\n", mean*1e3)
 	}
-
-	// Now spin up goroutines to have each publish flooder start flooding messages
-	for i, pub := range publishers {
-		wg.Add(1)
-		go func(i int, pub *flooding.PublishFlooder) {
-			defer wg.Done()
-			msgCntPub[i] = pub.PublishFor(time.Duration(int64(config.PublishDuration()))*time.Second, func() {
-				subscribers[i].Complete(1 * time.Second)
-			})
-		}(i, pub)
+	median, err := timings.Median()
+	if err != nil {
+		fmt.Fprintf(output, "ERROR computing median message latency!\n")
+	} else {
+		fmt.Fprintf(output, "Median latency    = %10.6f ms\n", median*1e3)
 	}
-
-	// Sync point. We can't do anything with the stats we collected until all the flooders are done
-	wg.Wait()
-
-	// We have all of our stats. Go ahead and compute averages and stuff now
-	fmt.Fprintf(output, "Success rate,Transit Time (s),,Message size,\n")
-	for i := 0; i < config.NumPublishers(); i++ {
-		subcnt := float64(msgCnt[i])
-		suc := subcnt / float64(msgCntPub[i]) * 100
-		avgTime := msgTimes[i] / subcnt
-		stdTime := math.Sqrt(math.Abs(msgTimesSquared[i]/subcnt - avgTime*avgTime))
-		avgSize := float64(msgSizes[i]) / subcnt
-		stdSize := math.Sqrt(math.Abs(float64(msgSizesSquared[i])/subcnt - avgSize*avgSize))
-		fmt.Fprintf(output, "%.2f%%,%g,%g,%g,%g\n", suc, avgTime, stdTime, avgSize, stdSize)
+	std, err := timings.StandardDeviation()
+	if err != nil {
+		fmt.Fprintf(output, "ERROR computing standard deviation of message latencies!\n")
+	} else {
+		fmt.Fprintf(output, "Std. Dev. latency = %10.6f ms\n", std)
 	}
 }

@@ -92,7 +92,6 @@ func NewPubSubFlooder(c *mqtt.MqttClient, mps int, mrv float64, ms int, msv floa
 // Publishes on the MQTT channel continuously until the killswitch is triggered with the
 // average rate and variance set when initializing the publish flooder
 func (p *PublishFlooder) Publish(ks *killswitch.Killswitch, callback func()) int {
-	//fmt.Println("Called Publish")
 	waitTime := 0 * time.Microsecond
 	var numMessages int = 0
 	msgChan := messages.GenerateRandomMessages(ks, p.MessageSize, p.MessageSizeVariance)
@@ -104,14 +103,11 @@ func (p *PublishFlooder) Publish(ks *killswitch.Killswitch, callback func()) int
 		select {
 		case <-time.After(waitTime):
 			// Publish a random message
-			//fmt.Printf("Publishing!\n")
 			err := p.client.Publish(p.Topic, 0, <-msgChan)
 			if err == nil {
-				//fmt.Printf("Successful publish!\n")
 				numMessages += 1
 			}
 		case <-ks.Done():
-			//fmt.Printf("Killswitch triggered. Ending publishing\n")
 			if callback != nil {
 				callback()
 			}
@@ -136,9 +132,11 @@ type FlooderCollection struct {
 	// A count of messages that have been sent
 	nMsgSent int
 	// A running total of message lengths and how long it's taken to process these messages
-	messages [][]float64
+	messages []float64
 	// A sync mutex
 	mux *sync.RWMutex
+	// The counting mutex
+	cmux *sync.RWMutex
 }
 
 // This creates a new FlooderCollection that returns instantly and begins populating its list of publishers and
@@ -163,14 +161,18 @@ func NewFlooderCollection(hostname, username, password string, port int, tlsConf
 	fc := &FlooderCollection{
 		publishers:  make([]*PublishFlooder, 0, maxFlooders),
 		subscribers: make([]*SubscribeFlooder, 0, maxFlooders),
-		messages:    make([][]float64, 0, maxFlooders),
+		messages:    make([]float64, 0),
 		mux:         &sync.RWMutex{},
+		cmux:        &sync.RWMutex{},
 	}
+	// Lock the message counter so we can't access it until it's released
+	fc.cmux.Lock()
 	// In case maxFlooders is not evenly divisible by maxGoRoutines, some goroutines will need to launch one more
 	// connection than others. Specifically, nExtra goroutines will need to launch one extra connection
 	nExtra := maxFlooders - (maxFlooders/maxGoRoutines)*maxGoRoutines
 	nConns := maxFlooders / maxGoRoutines
 	msgCntChan := make(chan int, maxFlooders)
+	msgTimingsChan := make(chan float64, 100) // buffered
 	for i := 0; i < mini(maxFlooders, maxGoRoutines); i++ {
 		go func(connNumber, numToAttempt int) {
 			for i := 0; i < numToAttempt; i++ {
@@ -186,24 +188,23 @@ func NewFlooderCollection(hostname, username, password string, port int, tlsConf
 					continue
 				}
 				k.Add()
-				msgs := make([]float64, 0)
 				fc.publishers = append(fc.publishers, pub)
 				fc.subscribers = append(fc.subscribers, sub)
-				fc.messages = append(fc.messages, msgs)
+				//fc.messages = append(fc.messages, msgs)
 				fc.mux.Unlock()
 				// Now start listening to each of the sub flooders
-				go func(sub *SubscribeFlooder, msgs []float64) {
+				go func(sub *SubscribeFlooder) {
 				mainLoop:
 					for {
 						select {
 						case msg := <-sub.SubChan:
 							elapsed := processMessage(msg)
-							msgs = append(msgs, float64(elapsed.Nanoseconds())*1e-9)
+							msgTimingsChan <- float64(elapsed.Nanoseconds()) * 1e-9
 						case <-k.Done():
 							break mainLoop
 						}
 					}
-				}(sub, msgs)
+				}(sub)
 				// Start the pub flooder publishing
 				go func(pub *PublishFlooder) {
 					msgCntChan <- pub.Publish(k, nil)
@@ -214,12 +215,22 @@ func NewFlooderCollection(hostname, username, password string, port int, tlsConf
 	}
 
 	go func() {
+		for {
+			select {
+			case val := <-msgTimingsChan:
+				fc.messages = append(fc.messages, val)
+			case <-k.Done():
+				return
+			}
+		}
+	}()
+
+	go func() {
 		// Block until we're done. We guaranteed that our msgCntChan will have enough space for every count, so it will
 		// not block. But we won't have filled the channel until our killswitch was triggered
 		<-k.Done()
 		k.Wait() // wait for everyone to finish
-		fc.mux.Lock()
-		defer fc.mux.Unlock()
+		defer fc.cmux.Unlock()
 	mainLoop:
 		for i := 0; i < maxFlooders; i++ {
 			select {
@@ -230,6 +241,7 @@ func NewFlooderCollection(hostname, username, password string, port int, tlsConf
 			}
 		}
 	}()
+
 	return fc
 }
 
@@ -246,9 +258,15 @@ func (fc *FlooderCollection) NumFailed() int {
 }
 
 func (fc *FlooderCollection) NumSentMessages() int {
+	fc.cmux.RLock()
+	defer fc.cmux.RUnlock()
+	return fc.nMsgSent
+}
+
+func (fc *FlooderCollection) MessageTimings() []float64 {
 	fc.mux.RLock()
 	defer fc.mux.RUnlock()
-	return fc.nMsgSent
+	return fc.messages
 }
 
 // Returns 1 if i is greater than 0, 0 otherwise
