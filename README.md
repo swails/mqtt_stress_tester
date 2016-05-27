@@ -7,6 +7,12 @@ broker by bombarding it with concurrent messages.
 This program is written in the Go programming language and was developed and
 tested with Go 1.6.
 
+Prerequisites
+-------------
+
+You need to have Go installed. This program was tested with Go 1.6 and later
+versions should work. Earlier versions should as well, although are untested.
+
 Building
 --------
 
@@ -104,8 +110,7 @@ ca-file: some.crt
 output: some.csv
 ```
 
-The way input is processed is that YAML files are dispatched for processing as
-soon as they are found on the command-line. Because of this order of operations,
-any command-line argument appearing *before* the YAML file will be overwritten,
-while any argument appearing *after* the YAML file will override the contents of
-the YAML file.
+The way input is processed is that YAML files are processed first, and any other
+command-line arguments are processed second. Because of this order of operations,
+any command-line argument will override the contents of the YAML file for that
+particular input variable.
