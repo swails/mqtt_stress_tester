@@ -206,12 +206,13 @@ func Echo(w io.Writer) {
 	if len(files.CA) > 0 {
 		fmt.Fprintf(w, "TLS Certificate: %s\n", files.CA)
 	}
-	fmt.Fprintf(w, "Port:            %d\n", conn.Port)
-	fmt.Fprintf(w, "# of publishers: %d\n", pubsub.Num)
-	fmt.Fprintf(w, "Message Rate:    %d per second\n", pubsub.MsgPerSec)
-	fmt.Fprintf(w, "Variance (MpS):  %f\n", pubsub.MsgRateVar)
-	fmt.Fprintf(w, "Message Size:    %d bytes\n", pubsub.MsgSize)
-	fmt.Fprintf(w, "Variance (size): %f\n", pubsub.MsgSizeVar)
-	fmt.Fprintf(w, "Topic prefix:    %s\n", pubsub.TopicPfx)
-	fmt.Fprintf(w, "Publishing for:  %d second(s)\n", pubsub.Duration)
+	fmt.Fprintf(w, "Port:             %d\n", conn.Port)
+	fmt.Fprintf(w, "# of publishers:  %d\n", pubsub.Num)
+	fmt.Fprintf(w, "Connecting every: %d second(s)\n", pubsub.CnctIntvl)
+	fmt.Fprintf(w, "Message Rate:     %d per second\n", pubsub.MsgPerSec)
+	fmt.Fprintf(w, "Variance (MpS):   %f\n", pubsub.MsgRateVar)
+	fmt.Fprintf(w, "Message Size:     %d bytes\n", pubsub.MsgSize)
+	fmt.Fprintf(w, "Variance (size):  %f\n", pubsub.MsgSizeVar)
+	fmt.Fprintf(w, "Topic prefix:     %s\n", pubsub.TopicPfx)
+	fmt.Fprintf(w, "Publishing for:   %d second(s)\n", pubsub.Duration)
 }
