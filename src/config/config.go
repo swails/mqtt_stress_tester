@@ -208,7 +208,7 @@ func Echo(w io.Writer) {
 	}
 	fmt.Fprintf(w, "Port:             %d\n", conn.Port)
 	fmt.Fprintf(w, "# of publishers:  %d\n", pubsub.Num)
-	fmt.Fprintf(w, "Connecting every: %d second(s)\n", pubsub.CnctIntvl)
+	fmt.Fprintf(w, "Connecting every: %f second(s)\n", pubsub.CnctIntvl)
 	fmt.Fprintf(w, "Message Rate:     %d per second\n", pubsub.MsgPerSec)
 	fmt.Fprintf(w, "Variance (MpS):   %f\n", pubsub.MsgRateVar)
 	fmt.Fprintf(w, "Message Size:     %d bytes\n", pubsub.MsgSize)
