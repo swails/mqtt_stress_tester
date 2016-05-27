@@ -77,7 +77,7 @@ The command-line options afford you the flexibility to publish more or fewer
 messages, at whatever rate you choose.
 
 Alternative Input: YAML
-~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------
 
 If you do not want to specify all input options on the command-line, you can
 write a YAML-formatted input file whose keys are the same as the long
