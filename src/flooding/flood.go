@@ -9,6 +9,7 @@ import (
 	"messages"
 	"mqtt"
 	"mqtt/randomcreds"
+	"os"
 	"sync"
 	"time"
 )
@@ -92,6 +93,15 @@ func NewPubSubFlooder(c *mqtt.MqttClient, mps int, mrv float64, ms int, msv floa
 // Publishes on the MQTT channel continuously until the killswitch is triggered with the
 // average rate and variance set when initializing the publish flooder
 func (p *PublishFlooder) Publish(ks *killswitch.Killswitch, callback func()) int {
+	defer func() {
+		if p := recover(); p != nil {
+			if err, ok := p.(error); ok {
+				fmt.Fprintf(os.Stderr, "recovered panic: %v", err)
+			} else {
+				fmt.Fprintf(os.Stderr, "recovered panic; no error!")
+			}
+		}
+	}()
 	waitTime := 0 * time.Microsecond
 	var numMessages int = 0
 	msgChan := messages.GenerateRandomMessages(ks, p.MessageSize, p.MessageSizeVariance)

@@ -21,7 +21,7 @@ type MqttClient struct {
 
 // Create a new pointer to a MqttClient instance. Setting tlsConfig to nil disables TLS encryption
 func NewMqttClient(hostname, username, password string, port int, tlsConfig *tls.Config) *MqttClient {
-	co := paho.NewClientOptions()
+	co := paho.NewClientOptions().SetAutoReconnect(false)
 	var broker string
 	if tlsConfig == nil {
 		broker = "tcp://" + hostname + ":" + fmt.Sprintf("%d", port)

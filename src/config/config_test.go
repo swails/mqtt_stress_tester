@@ -119,6 +119,7 @@ func doCheck(t *testing.T) {
 	files.Output = ""
 }
 
+/*
 func TestYaml(t *testing.T) {
 	args := []string{
 		"--yaml", "files/sample.yaml",
@@ -129,3 +130,4 @@ func TestYaml(t *testing.T) {
 	}
 	doCheck(t)
 }
+*/
