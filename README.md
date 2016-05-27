@@ -59,6 +59,8 @@ Publish/Subscribe Options:
                              message sizes (default: 5)
   -t, --topic-prefix=        Prefix to add to all random topic names for each
                              publisher (default: test/)
+  -i, --interval=            Interval (in seconds) between successive broker
+                             connection attempts (default: 1)
 
 Input/Output Files:
   -c, --ca-file=             Certificate authority to enable anonymous TLS
@@ -66,11 +68,11 @@ Input/Output Files:
   -o, --output=              Output file to write detailed pub/sub statistics
                              to (default: stdout)
   -y, --yaml=                Input file with command-line parameters in YAML
-                             format. CL options appearing before are
-                             overridden. Those appearing after override.
+                             format. CL options override YAML input
 
 Help Options:
   -h, --help                 Show this help message
+
 ```
 
 The command-line options afford you the flexibility to publish more or fewer
