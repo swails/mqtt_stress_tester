@@ -2,6 +2,7 @@ package mqtt
 
 import (
 	"crypto/tls"
+	"mqtt/randomcreds"
 	"testing"
 	"time"
 )
@@ -117,15 +118,16 @@ func doPubSubTests(pubclient, subclient *MqttClient, t *testing.T) {
 		t.Error("unexpected problem connecting subclient to broker")
 	}
 
-	subChan, err := subclient.Subscribe("test/topic", 0)
+	topic := randomcreds.RandomTopic("test/")
+	subChan, err := subclient.Subscribe(topic, 0)
 	if err != nil {
-		t.Errorf("unexpected error subscribing to test/topic: %v", err)
+		t.Errorf("unexpected error subscribing to %s: %v", topic, err)
 	}
 
-	err = pubclient.Publish("test/topic", 0, []byte("test message"))
+	err = pubclient.Publish(topic, 0, []byte("test message"))
 
 	if err != nil {
-		t.Errorf("unexpected error publishing to test/topic: %v", err)
+		t.Errorf("unexpected error publishing to %s: %v", topic, err)
 	}
 
 	x := string(<-subChan)
@@ -136,7 +138,7 @@ func doPubSubTests(pubclient, subclient *MqttClient, t *testing.T) {
 
 	// Publish again
 
-	err = pubclient.Publish("test/topic", 0, []byte("test message"))
+	err = pubclient.Publish(topic, 0, []byte("test message"))
 	if err != nil {
 		t.Errorf("unexpected error publishing second time: %v", err)
 	}
@@ -166,7 +168,7 @@ func doPubSubTests(pubclient, subclient *MqttClient, t *testing.T) {
 	}()
 
 	for i := 0; i < num_messages; i++ {
-		err = pubclient.Publish("test/topic", 0, []byte("test message"))
+		err = pubclient.Publish(topic, 0, []byte("test message"))
 		if err != nil {
 			t.Errorf("Unexpected error publishing swarm number %d", i)
 		}
