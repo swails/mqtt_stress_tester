@@ -122,7 +122,8 @@ func TestPubSubFlood(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		topic := randomcreds.RandomTopic("test/")
 		client := mqtt.NewMqttClient(HOSTNAME, USERNAME, PASSWORD, TLS_PORT, cfg)
-		pf, sf, err := NewPubSubFlooder(client, 10, 0.005, 50, 5, 0, topic)
+		sclient := mqtt.NewMqttClient(HOSTNAME, USERNAME, PASSWORD, TLS_PORT, cfg)
+		pf, sf, err := NewPubSubFlooder(client, sclient, 10, 0.005, 50, 5, 0, topic)
 		if err != nil {
 			t.Errorf("Unexpected error creating pub/sub flooders: %v", err)
 		}
@@ -190,7 +191,8 @@ func TestSubFloodClose(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		topic := randomcreds.RandomTopic("test/")
 		client := mqtt.NewMqttClient(HOSTNAME, USERNAME, PASSWORD, TLS_PORT, cfg)
-		pf, sf, err := NewPubSubFlooder(client, 10, 0.005, 50, 5, 0, topic)
+		sclient := mqtt.NewMqttClient(HOSTNAME, USERNAME, PASSWORD, TLS_PORT, cfg)
+		pf, sf, err := NewPubSubFlooder(client, sclient, 10, 0.005, 50, 5, 0, topic)
 		if err != nil {
 			t.Errorf("Unexpected error creating pub/sub flooders: %v", err)
 		}

@@ -18,6 +18,8 @@ const maxGoRoutines = 100000 // a cap to prevent blowing memory
 
 var connectionTimeout time.Duration = 10 * time.Second
 
+var firstErrorMessage chan error = make(chan error, 1) // store a single error
+
 // Generic flooder type common to both subscription and publishing
 type Flooder struct {
 	// The topic we are listening and/or talking on
@@ -78,12 +80,12 @@ func NewSubscribeFlooder(c *mqtt.MqttClient, qos int, topic string) (*SubscribeF
 }
 
 // Creates a new SubscribeFlooder and PublishFlooder from the same MQTT client
-func NewPubSubFlooder(c *mqtt.MqttClient, mps int, mrv float64, ms int, msv float64, qos int, topic string) (*PublishFlooder, *SubscribeFlooder, error) {
+func NewPubSubFlooder(c *mqtt.MqttClient, c2 *mqtt.MqttClient, mps int, mrv float64, ms int, msv float64, qos int, topic string) (*PublishFlooder, *SubscribeFlooder, error) {
 	p, err := NewPublishFlooder(c, mps, mrv, ms, msv, qos, topic)
 	if err != nil {
 		return nil, nil, err
 	}
-	s, err := NewSubscribeFlooder(c, qos, topic)
+	s, err := NewSubscribeFlooder(c2, qos, topic)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -118,6 +120,7 @@ func (p *PublishFlooder) Publish(ks *killswitch.Killswitch, callback func()) int
 				numMessages += 1
 			}
 		case <-ks.Done():
+			defer p.client.Disconnect()
 			if callback != nil {
 				callback()
 			}
@@ -187,9 +190,28 @@ func NewFlooderCollection(hostname, username, password string, port int, tlsConf
 		go func(connNumber, numToAttempt int) {
 			for i := 0; i < numToAttempt; i++ {
 				time.Sleep(time.Duration(connNumber+i*maxGoRoutines) * connDelay)
-				client := mqtt.NewMqttClient(hostname, username, password, port, tlsConfig)
+				pclient := mqtt.NewMqttClient(hostname, username, password, port, tlsConfig)
+				sclient := mqtt.NewMqttClient(hostname, username, password, port, tlsConfig)
+				err := pclient.Connect(connectionTimeout)
+				if err != nil {
+					select {
+					case firstErrorMessage <- err:
+						// nothing to do
+					default:
+						//nothing to do
+					}
+				}
+				err = sclient.Connect(connectionTimeout)
+				if err != nil {
+					select {
+					case firstErrorMessage <- err:
+						// nothing to do
+					default:
+						//nothing to do
+					}
+				}
 				topic := randomcreds.RandomTopic("test/")
-				pub, sub, err := NewPubSubFlooder(client, mps, mrv, ms, msv, qos, topic)
+				pub, sub, err := NewPubSubFlooder(pclient, sclient, mps, mrv, ms, msv, qos, topic)
 				fc.mux.Lock()
 				fc.nAttempted++
 				if err != nil || pub == nil || sub == nil {
@@ -211,6 +233,7 @@ func NewFlooderCollection(hostname, username, password string, port int, tlsConf
 							elapsed := processMessage(msg)
 							msgTimingsChan <- float64(elapsed.Nanoseconds()) * 1e-9
 						case <-k.Done():
+							defer sub.client.Disconnect()
 							break mainLoop
 						}
 					}
@@ -299,4 +322,13 @@ func processMessage(msg []byte) time.Duration {
 	now := time.Duration(time.Now().UnixNano())
 	msgTime := messages.ExtractTimeFromMessage(msg)
 	return now - msgTime
+}
+
+func GetFirstErrorMessage() error {
+	select {
+	case err := <-firstErrorMessage:
+		return err
+	default:
+		return nil
+	}
 }

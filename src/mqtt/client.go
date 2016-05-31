@@ -76,9 +76,9 @@ func (c *MqttClient) IsConnected() bool {
 
 // Disconnects from the broker
 func (c *MqttClient) Disconnect() {
-	c.Lock()
-	defer c.Unlock()
 	if c.client.IsConnected() {
+		c.Lock()
+		defer c.Unlock()
 		c.client.Disconnect(250)
 	}
 }
@@ -111,7 +111,18 @@ func (c *MqttClient) Publish(topic string, qos int, payload []byte) error {
 	if !c.client.IsConnected() {
 		return fmt.Errorf("not connected to publishing broker")
 	}
+	c.Lock()
+	defer c.Unlock()
 	token := c.client.Publish(topic, byte(qos), true, payload)
+	// Try to recover from any panic during publishing
+	if p := recover(); p != nil {
+		if err, ok := p.(error); ok {
+			fmt.Fprintf(os.Stderr, "Recovered from panic: %v", err)
+			return err
+		}
+		fmt.Fprintf(os.Stderr, "Recovered from panic; unknown error")
+		return fmt.Errorf("recovered from panic; unknown error")
+	}
 	if ret := token.Wait(); ret && token.Error() != nil {
 		return token.Error()
 	}
